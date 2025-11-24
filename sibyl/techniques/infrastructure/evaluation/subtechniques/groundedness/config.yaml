@@ -1,0 +1,4 @@
+subtechnique: groundedness
+description: "Groundedness verification"
+default_implementation: fact_check
+enabled: true

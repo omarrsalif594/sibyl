@@ -1,0 +1,10 @@
+technique: load_documents
+description: "Load documents from data providers"
+version: "1.0.0"
+default_subtechnique: loader
+default_variant: default
+timeout: 300
+max_retries: 3
+enabled: true
+subtechniques:
+  - loader

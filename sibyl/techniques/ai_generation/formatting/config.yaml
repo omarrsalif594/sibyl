@@ -1,0 +1,11 @@
+name: formatting
+description: |
+  Naming and formatting algorithms for checkpoints and categories.
+  Extracted from checkpointing/json_store.py and learning/engine.py.
+
+subtechniques:
+  - checkpoint_naming
+  - category_naming
+
+default_subtechnique: checkpoint_naming
+default_implementation: default

@@ -1,0 +1,131 @@
+# Claude Code Router Configuration
+#
+# This configuration defines routing rules for directing requests to different targets.
+# Rules are evaluated in order - first match wins.
+#
+# IMPORTANT: This is a CONFIG-DRIVEN router only. No automatic policy decisions are made.
+# - No LLM calls to decide routes
+# - No local vs remote availability checks
+# - No dynamic specialist selection
+#
+# This provides the STRUCTURE and INTERFACES for future extensions while keeping
+# routing explicit and transparent.
+
+rules:
+  # Route analytics queries to Northwind Analytics workspace
+  - name: "analytics_via_sibyl"
+    when_tags:
+      - "analytics"
+    route:
+      target: "sibyl_pipeline"
+      workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+      pipeline: "northwind_summary"
+      params:
+        temperature: 0.1
+        include_citations: true
+
+  # Route ML/experiment queries to Vertex Foundry workspace
+  - name: "ml_platform_via_sibyl"
+    when_tags:
+      - "ml"
+      - "experiments"
+    route:
+      target: "sibyl_pipeline"
+      workspace: "examples/companies/vertex_foundry/config/workspace.yaml"
+      pipeline: "vertex_experiment_summary"
+      params:
+        temperature: 0.3
+        max_tokens: 2000
+
+  # Route e-commerce queries to Acme Shop workspace
+  - name: "ecommerce_via_sibyl"
+    when_tags:
+      - "ecommerce"
+      - "shop"
+    route:
+      target: "sibyl_pipeline"
+      workspace: "examples/companies/acme_shop/config/workspace.yaml"
+      pipeline: "product_qa"
+      params:
+        top_k: 10
+        rerank_top_n: 5
+
+  # Route finance queries to Riverbank Finance workspace
+  - name: "finance_via_sibyl"
+    when_tags:
+      - "finance"
+      - "banking"
+    route:
+      target: "sibyl_pipeline"
+      workspace: "examples/companies/riverbank_finance/config/workspace.yaml"
+      pipeline: "financial_analysis"
+
+  # Route agency/marketing queries to BrightOps workspace
+  - name: "marketing_via_sibyl"
+    when_tags:
+      - "marketing"
+      - "agency"
+    route:
+      target: "sibyl_pipeline"
+      workspace: "examples/companies/brightops_agency/config/workspace.yaml"
+      pipeline: "campaign_analysis"
+
+  # Future extension: Route to local specialist
+  # This demonstrates the interface for local specialists (not implemented)
+  - name: "future_local_specialist"
+    when_tags:
+      - "local_specialist_demo"
+    route:
+      target: "local_specialist"
+      specialist_id: "demo_specialist"
+      params:
+        model: "claude-sonnet-4-5"
+        max_tokens: 4096
+
+  # Future extension: Route to remote LLM
+  # This demonstrates the interface for remote LLM calls (not implemented)
+  - name: "future_remote_llm"
+    when_tags:
+      - "remote_llm_demo"
+    route:
+      target: "remote_llm"
+      params:
+        provider: "anthropic"
+        model: "claude-sonnet-4-5"
+        max_tokens: 4096
+        temperature: 0.7
+
+  # Default fallback rule - matches when no other rule applies
+  # Empty when_tags means this always matches as a last resort
+  - name: "default_fallback"
+    when_tags: []
+    route:
+      target: "remote_llm"
+      params:
+        provider: "anthropic"
+        model: "claude-sonnet-4-5"
+        max_tokens: 4096
+        temperature: 0.7
+
+# Future extensions:
+#
+# 1. Context-based routing:
+#    when_context:
+#      repo_size_mb: { gt: 1000 }
+#      file_count: { gt: 100 }
+#
+# 2. Composite rules (AND/OR logic):
+#    when_all:
+#      - when_tags: ["ml"]
+#      - when_context: { workspace: "vertex_foundry" }
+#
+# 3. Priority/weight-based routing:
+#    priority: 100
+#    weight: 0.8
+#
+# 4. Rate limiting per target:
+#    rate_limit:
+#      max_requests_per_minute: 10
+#
+# 5. Cost-aware routing:
+#    cost_limit_usd_per_request: 0.01

@@ -1,0 +1,408 @@
+# Router RAG Helper Workspace
+# Purpose: Documentation Q&A with intelligent routing and compression
+# Demonstrates: RAG + routing + compression integration
+# Requires: OPENAI_API_KEY and/or ANTHROPIC_API_KEY
+
+name: "router-rag-helper"
+description: "Documentation Q&A with adaptive routing, compression, and semantic search"
+version: "1.0"
+
+# Global budget limits
+budget:
+  max_cost_usd: 2.0
+  max_tokens: 50000
+  max_requests: 30
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    # Fast provider for simple doc lookups
+    fast:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.1
+      rate_limit:
+        max_concurrent: 10
+        requests_per_minute: 50
+
+    # Balanced provider for moderate complexity
+    balanced:
+      provider: "openai"
+      model: "gpt-4-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.2
+      rate_limit:
+        max_concurrent: 5
+        requests_per_minute: 30
+
+    # Thinking provider for complex concepts
+    think:
+      provider: "anthropic"
+      model: "claude-sonnet-4-5-20250929"
+      api_key_env: "ANTHROPIC_API_KEY"
+      max_tokens: 8192
+      temperature: 0.3
+      rate_limit:
+        max_concurrent: 5
+        requests_per_minute: 20
+
+  # Embeddings for semantic search
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store for documentation
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/router_rag_docs.duckdb"
+      collection_name: "documentation"
+      distance_metric: "cosine"
+
+  # Algorithmic MCP providers
+  mcp:
+    nlp:
+      type: "stdio_mcp"
+      endpoint: "mcp-nlp-server"
+      tools:
+        - "text_similarity"
+        - "extract_entities"
+        - "classify_intent"
+      timeout_s: 30
+
+# Routing configuration
+routing:
+  enabled: true
+  strategy: "priority"
+  providers:
+    - fast
+    - balanced
+    - think
+  priorities:
+    fast: 10     # Simple "how-to" queries
+    balanced: 5  # Moderate conceptual questions
+    think: 1     # Complex architectural concepts
+  timeout_s: 120
+  fallback:
+    enabled: true
+    max_retries: 2
+
+# Compression configuration
+compression:
+  profiles:
+    # Default: no compression
+    default:
+      enabled: false
+
+    # Docs profile: moderate compression
+    docs_qa:
+      enabled: true
+      chain:
+        - name: "global_intent_extractor"
+          params:
+            max_intent_length: 400
+        - name: "algorithmic_compressor"
+          params:
+            algorithm: "keyword_extraction"
+
+    # Analyze profile: aggressive compression
+    docs_analyze:
+      enabled: true
+      chain:
+        - name: "global_intent_extractor"
+          params:
+            max_intent_length: 500
+        - name: "multi_pass_summary"
+          params:
+            num_passes: 2
+            target_compression: 0.5  # 50% reduction
+
+# Shop configurations
+shops:
+  # RAG for documentation
+  docs_rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 512
+      chunk_overlap: 128
+      top_k: 20
+      rerank_top_k: 10
+
+  # Routing shop
+  routing:
+    techniques:
+      router: "infrastructure.llm.routing:smart"
+    config:
+      use_compression: true
+      profile_detection: true
+
+  # Compression shop
+  compression:
+    techniques:
+      compressor: "workflow_orchestration.context_management.compression:gist"
+    config:
+      default_profile: "docs_qa"
+
+# Pipelines
+pipelines:
+  # Main RAG pipeline with routing and compression
+  docs_qa_routed:
+    description: "Documentation Q&A with adaptive routing and compression"
+    budget:
+      max_cost_usd: 0.50
+      max_tokens: 10000
+      max_time_seconds: 120
+
+    steps:
+      # Step 1: Classify query intent (simple/moderate/complex)
+      - name: "classify_query"
+        technique: "mcp:nlp"
+        tool: "classify_intent"
+        inputs:
+          text: "${input.query}"
+        outputs:
+          query_type: "query_classification"  # "howto", "concept", "code"
+          complexity: "query_complexity"      # "simple", "moderate", "complex"
+
+      # Step 2: Semantic search for relevant docs
+      - name: "semantic_search"
+        technique: "docs_rag:semantic_search"
+        inputs:
+          query: "${input.query}"
+          collection: "documentation"
+          top_k: 20
+        outputs:
+          results: "search_results"
+
+      # Step 3: Rerank results
+      - name: "rerank"
+        technique: "docs_rag:rerank"
+        inputs:
+          query: "${input.query}"
+          results: "${search_results}"
+          top_k: 10
+        outputs:
+          ranked: "ranked_results"
+
+      # Step 4: Compress context based on query complexity
+      - name: "compress_context"
+        technique: "compression:gist"
+        inputs:
+          text: "${ranked_results}"
+          compression_ratio: |
+            {% if query_complexity == "simple" %}0.7
+            {% elif query_complexity == "moderate" %}0.5
+            {% else %}0.4{% endif %}
+        outputs:
+          compressed: "compressed_docs"
+
+      # Step 5: Route to appropriate model
+      - name: "generate_answer"
+        technique: "routing:smart_route"
+        inputs:
+          prompt: |
+            Answer the following documentation question using the provided context.
+
+            Question: ${input.query}
+            Question Type: ${query_classification}
+
+            Context: ${compressed_docs}
+
+            Instructions:
+            {% if query_classification == "howto" %}
+            - Provide step-by-step instructions
+            - Include code examples if relevant
+            - Be concise and actionable
+            {% elif query_classification == "concept" %}
+            - Explain the concept clearly
+            - Provide examples and use cases
+            - Include related concepts
+            {% else %}
+            - Show relevant code examples
+            - Explain how it works
+            - Include best practices
+            {% endif %}
+          profile: "docs_qa"
+          provider: |
+            {% if query_complexity == "simple" %}fast
+            {% elif query_complexity == "moderate" %}balanced
+            {% else %}think{% endif %}
+        outputs:
+          answer: "final_answer"
+          provider_used: "selected_provider"
+
+      # Step 6: Format response based on query type
+      - name: "format_response"
+        technique: "ai_generation:basic"
+        inputs:
+          content: "${final_answer}"
+          format_type: "${query_classification}"
+        outputs:
+          formatted: "formatted_answer"
+
+    returns:
+      answer: "${formatted_answer}"
+      query_type: "${query_classification}"
+      complexity: "${query_complexity}"
+      provider_used: "${selected_provider}"
+      compression_ratio: "${compressed_docs.compression_ratio}"
+      sources: "${ranked_results}"
+
+  # Simple fast lookup pipeline
+  docs_fast_lookup:
+    description: "Fast documentation lookup without heavy processing"
+    budget:
+      max_cost_usd: 0.10
+      max_tokens: 2000
+      max_time_seconds: 30
+
+    steps:
+      # Step 1: Quick semantic search
+      - name: "quick_search"
+        technique: "docs_rag:semantic_search"
+        inputs:
+          query: "${input.query}"
+          collection: "documentation"
+          top_k: 5
+        outputs:
+          results: "search_results"
+
+      # Step 2: Light compression
+      - name: "extract_key_info"
+        technique: "compression:global_intent_extractor"
+        inputs:
+          text: "${search_results}"
+        outputs:
+          key_info: "extracted_info"
+
+      # Step 3: Fast model response
+      - name: "quick_answer"
+        technique: "routing:smart_route"
+        inputs:
+          prompt: "Briefly answer: ${input.query}\n\nContext: ${extracted_info}"
+          profile: "default"
+          provider: "fast"
+        outputs:
+          answer: "quick_answer"
+
+    returns:
+      answer: "${quick_answer}"
+      sources: "${search_results}"
+
+  # Deep analysis pipeline
+  docs_deep_analysis:
+    description: "Comprehensive documentation analysis with multi-pass compression"
+    budget:
+      max_cost_usd: 1.00
+      max_tokens: 30000
+      max_time_seconds: 300
+
+    steps:
+      # Step 1: Comprehensive search
+      - name: "comprehensive_search"
+        technique: "docs_rag:semantic_search"
+        inputs:
+          query: "${input.query}"
+          collection: "documentation"
+          top_k: 50
+        outputs:
+          results: "comprehensive_results"
+
+      # Step 2: Extract entities and relationships
+      - name: "extract_entities"
+        technique: "mcp:nlp"
+        tool: "extract_entities"
+        inputs:
+          text: "${comprehensive_results}"
+        outputs:
+          entities: "extracted_entities"
+
+      # Step 3: Multi-pass compression
+      - name: "deep_compress"
+        technique: "compression:multi_pass_summary"
+        inputs:
+          text: "Results: ${comprehensive_results}\n\nEntities: ${extracted_entities}"
+          num_passes: 2
+          target_compression: 0.4
+        outputs:
+          compressed: "deeply_compressed"
+
+      # Step 4: Route to thinking model
+      - name: "deep_analysis"
+        technique: "routing:smart_route"
+        inputs:
+          prompt: |
+            Provide comprehensive analysis of the following documentation query.
+
+            Query: ${input.query}
+
+            Compressed Context: ${deeply_compressed}
+            Key Entities: ${extracted_entities}
+
+            Provide:
+            1. Complete explanation
+            2. Related concepts
+            3. Best practices
+            4. Common pitfalls
+            5. Practical examples
+          profile: "docs_analyze"
+          provider: "think"
+        outputs:
+          analysis: "deep_analysis_result"
+
+    returns:
+      analysis: "${deep_analysis_result}"
+      entities: "${extracted_entities}"
+      compression_summary: "${deeply_compressed}"
+
+# MCP Tools exposure
+mcp_tools:
+  - name: "docs_qa_routed"
+    description: "Adaptive documentation Q&A with routing"
+    pipeline: "docs_qa_routed"
+    inputs:
+      query:
+        type: "string"
+        description: "Documentation question"
+    outputs:
+      answer:
+        type: "string"
+        description: "Generated answer"
+      query_type:
+        type: "string"
+        description: "Classified query type"
+
+  - name: "docs_fast_lookup"
+    description: "Quick documentation lookup"
+    pipeline: "docs_fast_lookup"
+    inputs:
+      query:
+        type: "string"
+        description: "Simple documentation query"
+    outputs:
+      answer:
+        type: "string"
+        description: "Quick answer"
+
+  - name: "docs_deep_analysis"
+    description: "Comprehensive documentation analysis"
+    pipeline: "docs_deep_analysis"
+    inputs:
+      query:
+        type: "string"
+        description: "Complex documentation query"
+    outputs:
+      analysis:
+        type: "string"
+        description: "Deep analysis result"

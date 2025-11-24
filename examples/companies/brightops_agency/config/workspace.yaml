@@ -1,0 +1,191 @@
+# BrightOps Agency Workspace Configuration
+# Demonstrates knowledge worker workflows: messy inputs → structured outputs
+
+workspace:
+  name: brightops_agency
+  version: "1.0.0"
+  description: "Knowledge worker automation - turning brainstorms into structured project plans"
+
+# MCP Connections
+connections:
+  # Sequential Thinking MCP - Multi-step reasoning for planning
+  sequential_thinking:
+    type: mcp
+    server: sequential_thinking
+    transport: stdio
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-sequential-thinking"
+    env:
+      DISABLE_THOUGHT_LOGGING: "false"
+    timeout_s: 120
+    capabilities:
+      - step_by_step_reasoning
+      - thought_revision
+      - branching_logic
+    tools:
+      - sequential_thinking
+
+  # In-Memoria MCP - Pattern learning and memory
+  in_memoria:
+    type: mcp
+    server: in_memoria
+    transport: stdio
+    command: "npx"
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-memory"
+    timeout_s: 60
+    capabilities:
+      - pattern_detection
+      - pattern_storage
+      - pattern_retrieval
+      - entity_tracking
+    tools:
+      - create_entities
+      - create_relations
+      - search_nodes
+      - open_nodes
+      - read_graph
+
+# Data Sources
+data_sources:
+  # Meeting notes and brainstorm documents
+  meeting_docs:
+    type: filesystem
+    path: "examples/companies/brightops_agency/data/docs/meetings"
+    includes:
+      - "*.md"
+    description: "Unstructured meeting notes and brainstorm sessions"
+
+  # Client communication emails
+  client_emails:
+    type: filesystem
+    path: "examples/companies/brightops_agency/data/docs/emails"
+    includes:
+      - "*.md"
+    description: "Client emails showing communication patterns and preferences"
+
+  # Project specifications
+  project_specs:
+    type: filesystem
+    path: "examples/companies/brightops_agency/data/docs/specs"
+    includes:
+      - "*.md"
+    description: "Project specifications at various detail levels"
+
+  # Brainstorm documents
+  brainstorms:
+    type: filesystem
+    path: "examples/companies/brightops_agency/data/docs/brainstorms"
+    includes:
+      - "*.md"
+    description: "Stream-of-consciousness brainstorm documents"
+
+# Vector Store Configuration (for RAG)
+vector_store:
+  default:
+    kind: duckdb
+    dsn: "duckdb://examples/companies/brightops_agency/data/brightops.db"
+    collection_name: documents
+    distance_metric: cosine
+    embedding_dimension: 384
+
+# Embeddings Configuration
+embeddings:
+  default:
+    provider: local_sentence_transformer
+    model: all-MiniLM-L6-v2
+    dimension: 384
+
+# LLM Configuration
+llm:
+  default:
+    provider: anthropic
+    model: claude-sonnet-4-5
+    max_tokens: 4096
+    temperature: 0.7
+
+# AI Generation Techniques Configuration
+techniques:
+  # Category Naming - Organize unstructured items into categories
+  category_naming:
+    path: "ai_generation.formatting.category_naming"
+    variant: "default"
+    config:
+      max_categories: 10
+      min_items_per_category: 2
+      use_hierarchical: false
+
+  # Checkpoint Naming - Break projects into milestones
+  checkpoint_naming:
+    path: "ai_generation.formatting.checkpoint_naming"
+    variant: "default"
+    config:
+      max_checkpoints: 8
+      include_timeline: true
+      include_dependencies: true
+
+  # Quality Scoring - Score outputs for quality
+  quality_scoring:
+    path: "ai_generation.validation.quality_scoring"
+    variant: "default"
+    config:
+      min_score: 0.7
+      criteria:
+        - completeness
+        - clarity
+        - actionability
+
+# Shops Configuration
+shops:
+  # RAG Shop for document retrieval
+  rag:
+    description: "Retrieve and synthesize information from documents"
+    techniques:
+      chunker: "rag_pipeline.chunking:markdown_chunking"
+      embedder: "rag_pipeline.embedding:sentence_transformer"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      reranker: "rag_pipeline.reranking:cross_encoder"
+    config:
+      top_k: 5
+      chunk_size: 500
+      chunk_overlap: 50
+
+  # AI Generation Shop
+  ai_generation:
+    description: "Structure unstructured content using AI techniques"
+    techniques:
+      category_naming: "ai_generation.formatting.category_naming:default"
+      checkpoint_naming: "ai_generation.formatting.checkpoint_naming:default"
+      quality_scoring: "ai_generation.validation.quality_scoring:default"
+    config:
+      llm_provider: "default"
+      temperature: 0.5
+
+  # MCP Shop for external tools
+  mcp:
+    description: "Access MCP tools for reasoning and memory"
+    config:
+      default_timeout: 120
+
+# Runtime Configuration
+runtime:
+  features:
+    streaming: true
+    auto_retry: true
+    error_recovery: true
+
+  retry:
+    max_attempts: 3
+    backoff_multiplier: 2
+    initial_delay_ms: 1000
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  output:
+    - console
+    - file: "examples/companies/brightops_agency/logs/brightops.log"

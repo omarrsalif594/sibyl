@@ -1,0 +1,303 @@
+# Router Dev Assistant Workspace
+# Purpose: Smart code assistant with intelligent routing and compression
+# Demonstrates: LLM routing, compression wall, multi-MCP coordination
+# Requires: OPENAI_API_KEY and/or ANTHROPIC_API_KEY
+
+name: "router-dev-assistant"
+description: "Smart code assistant with intelligent LLM routing, compression, and multi-MCP coordination"
+version: "1.0"
+
+# Global budget limits
+budget:
+  max_cost_usd: 5.0
+  max_tokens: 100000
+  max_requests: 50
+
+# Provider configurations
+providers:
+  # Language Model providers with routing
+  llm:
+    # Fast provider for quick queries
+    fast:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.2
+      rate_limit:
+        max_concurrent: 10
+        requests_per_minute: 50
+        tokens_per_minute: 40000
+
+    # Thinking provider for complex analysis
+    think:
+      provider: "openai"
+      model: "gpt-4-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 8192
+      temperature: 0.3
+      rate_limit:
+        max_concurrent: 5
+        requests_per_minute: 20
+        tokens_per_minute: 80000
+
+    # Anthropic Claude for long context
+    claude:
+      provider: "anthropic"
+      model: "claude-sonnet-4-5-20250929"
+      api_key_env: "ANTHROPIC_API_KEY"
+      max_tokens: 4096
+      temperature: 0.3
+      rate_limit:
+        max_concurrent: 5
+        requests_per_minute: 30
+        tokens_per_minute: 100000
+
+  # Embeddings for semantic search
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store for code context
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/router_dev_assistant.duckdb"
+      collection_name: "code_context"
+      distance_metric: "cosine"
+
+  # Algorithmic MCP providers
+  mcp:
+    chunkhound:
+      type: "stdio_mcp"
+      endpoint: "chunkhound-server"
+      tools:
+        - "chunk_code"
+        - "analyze_structure"
+      timeout_s: 30
+
+    ast_grep:
+      type: "stdio_mcp"
+      endpoint: "ast-grep-server"
+      tools:
+        - "pattern_match"
+        - "structural_search"
+      timeout_s: 30
+
+    sequential_thinking:
+      type: "stdio_mcp"
+      endpoint: "sequential-thinking-server"
+      tools:
+        - "think_step_by_step"
+        - "break_down_problem"
+      timeout_s: 60
+
+# Routing configuration
+routing:
+  enabled: true
+  strategy: "priority"  # Route based on query complexity
+  providers:
+    - fast
+    - think
+    - claude
+  priorities:
+    fast: 10     # Highest priority for simple queries
+    think: 5     # Medium priority for complex analysis
+    claude: 1    # Lowest priority, used for very long context
+  timeout_s: 120
+  fallback:
+    enabled: true
+    max_retries: 2
+
+# Compression configuration
+compression:
+  profiles:
+    # Fast profile: lightweight compression
+    code_fast:
+      enabled: true
+      chain:
+        - name: "global_intent_extractor"
+          params:
+            max_intent_length: 300
+
+    # Think profile: aggressive compression
+    code_think:
+      enabled: true
+      chain:
+        - name: "global_intent_extractor"
+          params:
+            max_intent_length: 500
+        - name: "multi_pass_summary"
+          params:
+            num_passes: 2
+            target_compression: 0.4  # 60% reduction
+
+# Shop configurations
+shops:
+  # Code RAG with routing
+  code_rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 1024
+      chunk_overlap: 256
+      top_k: 10
+      rerank_top_k: 5
+
+  # Routing shop
+  routing:
+    techniques:
+      router: "infrastructure.llm.routing:smart"
+    config:
+      use_compression: true
+      profile_detection: true  # Auto-detect query complexity
+
+  # Compression shop
+  compression:
+    techniques:
+      compressor: "workflow_orchestration.context_management.compression:gist"
+    config:
+      default_profile: "code_fast"
+
+# Pipelines
+pipelines:
+  # Fast pipeline for simple queries
+  dev_assistant_fast:
+    description: "Quick code questions with fast model and light compression"
+    budget:
+      max_cost_usd: 0.10
+      max_tokens: 5000
+      max_time_seconds: 60
+
+    steps:
+      # Step 1: Extract query intent
+      - name: "extract_intent"
+        technique: "compression:global_intent_extractor"
+        inputs:
+          text: "${input.query}"
+        outputs:
+          intent: "query_intent"
+
+      # Step 2: Search code context with ChunkHound
+      - name: "search_code"
+        technique: "mcp:chunkhound"
+        tool: "chunk_code"
+        inputs:
+          code: "${input.code_context}"
+          query: "${query_intent}"
+        outputs:
+          chunks: "relevant_chunks"
+
+      # Step 3: Route to fast model with compression
+      - name: "generate_answer"
+        technique: "routing:smart_route"
+        inputs:
+          prompt: "Answer the following code question:\n\nQuestion: ${input.query}\n\nContext: ${relevant_chunks}\n\nProvide a concise, accurate answer."
+          profile: "code_fast"
+          provider: "fast"
+        outputs:
+          answer: "final_answer"
+
+    returns:
+      answer: "${final_answer}"
+      intent: "${query_intent}"
+      chunks_used: "${relevant_chunks}"
+
+  # Think pipeline for complex analysis
+  dev_assistant_think:
+    description: "Complex code analysis with thinking model, multi-MCP, and aggressive compression"
+    budget:
+      max_cost_usd: 1.00
+      max_tokens: 20000
+      max_time_seconds: 300
+
+    steps:
+      # Step 1: Break down problem with Sequential Thinking
+      - name: "break_down"
+        technique: "mcp:sequential_thinking"
+        tool: "break_down_problem"
+        inputs:
+          problem: "${input.query}"
+        outputs:
+          steps: "analysis_steps"
+
+      # Step 2: Search with ChunkHound
+      - name: "search_code"
+        technique: "mcp:chunkhound"
+        tool: "analyze_structure"
+        inputs:
+          code: "${input.code_context}"
+        outputs:
+          structure: "code_structure"
+
+      # Step 3: Pattern match with ast-grep
+      - name: "pattern_match"
+        technique: "mcp:ast_grep"
+        tool: "pattern_match"
+        inputs:
+          code: "${code_structure}"
+          pattern: "${analysis_steps}"
+        outputs:
+          matches: "pattern_matches"
+
+      # Step 4: Compress all context
+      - name: "compress_context"
+        technique: "compression:multi_pass_summary"
+        inputs:
+          text: "Steps: ${analysis_steps}\n\nStructure: ${code_structure}\n\nMatches: ${pattern_matches}"
+        outputs:
+          compressed: "compressed_context"
+
+      # Step 5: Route to thinking model
+      - name: "deep_analysis"
+        technique: "routing:smart_route"
+        inputs:
+          prompt: "Perform deep code analysis:\n\nQuery: ${input.query}\n\nAnalysis: ${compressed_context}\n\nProvide comprehensive insights with reasoning."
+          profile: "code_think"
+          provider: "think"
+        outputs:
+          analysis: "deep_analysis_result"
+
+    returns:
+      analysis: "${deep_analysis_result}"
+      steps: "${analysis_steps}"
+      compressed_context: "${compressed_context}"
+
+# MCP Tools exposure
+mcp_tools:
+  # Expose pipelines as MCP tools
+  - name: "dev_assistant_fast"
+    description: "Quick code assistant for simple queries"
+    pipeline: "dev_assistant_fast"
+    inputs:
+      query:
+        type: "string"
+        description: "Code question to answer"
+      code_context:
+        type: "string"
+        description: "Code context for analysis"
+    outputs:
+      answer:
+        type: "string"
+        description: "Generated answer"
+
+  - name: "dev_assistant_think"
+    description: "Deep code analysis for complex queries"
+    pipeline: "dev_assistant_think"
+    inputs:
+      query:
+        type: "string"
+        description: "Complex code question"
+      code_context:
+        type: "string"
+        description: "Code context for analysis"
+    outputs:
+      analysis:
+        type: "string"
+        description: "Comprehensive analysis"

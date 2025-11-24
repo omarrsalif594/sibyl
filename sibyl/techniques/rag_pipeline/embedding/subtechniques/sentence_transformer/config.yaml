@@ -1,0 +1,16 @@
+# Sentence Transformer Embedding Configuration
+
+# Model name from Hugging Face
+model_name: "sentence-transformers/all-MiniLM-L6-v2"
+
+# Device to use (cpu, cuda, mps)
+device: "cpu"
+
+# Whether to normalize embeddings
+normalize_embeddings: true
+
+# Maximum sequence length
+max_seq_length: 512
+
+# Batch size for embedding
+batch_size: 32

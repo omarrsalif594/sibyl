@@ -1,0 +1,35 @@
+{
+  "run_id": "run_20250116_091523",
+  "experiment_id": "exp_002",
+  "status": "failed",
+  "started_at": "2025-01-16T09:15:23Z",
+  "failed_at": "2025-01-16T09:42:15Z",
+  "duration_seconds": 1612,
+  "failure_step": 1523,
+  "error_type": "RuntimeError",
+  "error_message": "Loss became NaN at step 1523",
+  "hyperparameters": {
+    "learning_rate": 0.01,
+    "batch_size": 32,
+    "epochs": 50,
+    "dropout": 0.5,
+    "weight_decay": 0.0001
+  },
+  "metrics": {
+    "last_train_loss": "NaN",
+    "last_train_acc": 18.2,
+    "last_val_loss": "NaN",
+    "last_val_acc": 15.4,
+    "last_completed_epoch": 12
+  },
+  "resources": {
+    "gpu_type": "T4",
+    "gpu_count": 1,
+    "memory_gb": 16,
+    "cost_usd": 0.89
+  },
+  "artifacts": {
+    "error_log": "s3://vertex-foundry/runs/run_20250116_091523/error.log",
+    "partial_logs": "s3://vertex-foundry/runs/run_20250116_091523/logs/"
+  }
+}

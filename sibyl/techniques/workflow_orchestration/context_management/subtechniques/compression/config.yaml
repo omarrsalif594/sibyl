@@ -1,0 +1,4 @@
+subtechnique: compression
+description: "Context compression techniques"
+default_implementation: entity_compression
+enabled: true

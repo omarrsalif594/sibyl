@@ -1,0 +1,36 @@
+# Filesystem MCP Configuration
+# Usage: Include this snippet in your workspace.yaml
+
+mcps:
+  filesystem:
+    enabled: true
+
+    # Root path for file operations (relative to workspace or absolute)
+    root_path: ./data
+
+    # Access permissions
+    allowed_operations:
+      - read
+      - write
+      - list
+
+    # File type restrictions (optional)
+    allowed_extensions:
+      - .txt
+      - .md
+      - .json
+      - .yaml
+      - .csv
+      - .py
+
+    # Size limits
+    max_file_size_mb: 100
+
+# Example usage in pipeline:
+# techniques:
+#   - name: read_documents
+#     type: data_integration/load_documents
+#     config:
+#       mcp_name: filesystem
+#       path: documents/*.md
+#       recursive: true

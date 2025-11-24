@@ -1,0 +1,4 @@
+subtechnique: diversity_rerank
+description: "Diversity-aware reranking"
+default_implementation: mmr
+enabled: true

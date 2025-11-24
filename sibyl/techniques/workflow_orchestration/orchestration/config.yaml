@@ -1,0 +1,68 @@
+# Orchestration Technique Configuration
+#
+# This configuration defines default settings for the orchestration technique
+# and its subtechniques.
+
+technique: orchestration
+description: "Workflow orchestration and execution"
+version: "1.0.0"
+enabled: true
+
+# Technique-level defaults
+default_execution_model: "wave_based"
+default_parallelism: "semaphore"
+default_routing: "expert_routing"
+timeout: 300
+max_retries: 3
+
+# Execution model configurations
+execution_models:
+  wave_based:
+    max_parallel: 10
+    description: "Executes tasks in parallel waves based on dependencies"
+
+  sequential:
+    stop_on_error: true
+    description: "Executes tasks one at a time in order"
+
+  dag_based:
+    stop_on_error: true
+    description: "Executes tasks in topological order based on DAG"
+
+# Parallelism configurations
+parallelism:
+  semaphore:
+    max_concurrent: 10
+    description: "Semaphore-based concurrency limiting"
+
+  thread_pool:
+    max_workers: 10
+    description: "Thread pool executor"
+
+  process_pool:
+    max_workers: 4
+    description: "Process pool executor for CPU-bound tasks"
+
+# Routing configurations
+routing:
+  expert_routing:
+    use_confidence_threshold: true
+    min_confidence: 0.7
+    description: "Route to specialized expert agents"
+
+  round_robin:
+    description: "Simple round-robin distribution"
+
+  load_balanced:
+    use_queue_size: true
+    description: "Load-aware routing based on queue sizes"
+
+# Global orchestration settings
+orchestration:
+  enable_checkpointing: true
+  checkpoint_interval: 5
+  enable_retry: true
+  max_retries: 3
+  retry_backoff_seconds: 1
+  enable_observability: true
+  metrics_sampling_rate: 1.0

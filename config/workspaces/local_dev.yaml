@@ -1,0 +1,156 @@
+# Local Development Workspace
+# Simple, self-contained workspace for local development and testing
+# No external API keys required - uses local/mock providers
+
+name: local-dev
+version: "1.0"
+description: "Local development workspace with mock providers for testing"
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: local
+      model: echo  # Echo mode returns simple responses for testing
+      max_tokens: 2048
+      temperature: 0.7
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: local_sentence_transformer
+      model: all-MiniLM-L6-v2  # Small, fast model for local development
+      dimension: 384
+
+  # Vector store configurations
+  vector_store:
+    default:
+      kind: duckdb
+      dsn: "duckdb://./data/local_dev.db"
+      collection_name: documents
+      distance_metric: cosine
+
+  # External MCP providers (optional - for local testing)
+  mcp: {}
+
+# Shop configurations (technique collections)
+shops:
+  # RAG (Retrieval-Augmented Generation) shop
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+      top_k: 5
+
+  # AI Generation shop
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+    config:
+      max_iterations: 3
+      quality_threshold: 0.7
+
+# Pipeline configurations (workflows)
+pipelines:
+  # Simple document indexing pipeline
+  index_docs:
+    shop: rag
+    description: "Index documents into vector store"
+    timeout_s: 120
+    steps:
+      - use: rag.chunker
+        config:
+          chunk_size: 512
+          chunk_overlap: 50
+
+  # Simple document query pipeline
+  query_docs:
+    shop: rag
+    description: "Query indexed documents"
+    timeout_s: 60
+    steps:
+      - use: rag.retriever
+        config:
+          top_k: 5
+      - use: rag.synthesizer
+
+  # RAG pipeline with ranking
+  rag_with_ranking:
+    shop: rag
+    description: "Full RAG pipeline with retrieval, ranking, and synthesis"
+    timeout_s: 90
+    steps:
+      - use: rag.retriever
+        config:
+          top_k: 10
+      - use: rag.ranker
+        config:
+          rerank_top_k: 5
+      - use: rag.synthesizer
+
+  # AI generation with validation
+  generate_content:
+    shop: ai_generation
+    description: "Generate content with quality validation"
+    timeout_s: 120
+    steps:
+      - use: ai_generation.generator
+      - use: ai_generation.validator
+        config:
+          min_quality: 0.7
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-local-dev"
+  server_version: "1.0.0"
+  tools:
+    - name: "search_docs"
+      description: "Search indexed documents using semantic search. Returns relevant passages."
+      pipeline: "query_docs"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "The search query"
+          top_k:
+            type: integer
+            description: "Number of results to return"
+            default: 5
+        required:
+          - query
+
+    - name: "rag_search"
+      description: "Advanced semantic search with reranking and synthesis"
+      pipeline: "rag_with_ranking"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "The search query"
+        required:
+          - query
+
+    - name: "generate_text"
+      description: "Generate content with automatic quality validation"
+      pipeline: "generate_content"
+      input_schema:
+        type: object
+        properties:
+          prompt:
+            type: string
+            description: "The generation prompt"
+          max_tokens:
+            type: integer
+            description: "Maximum tokens to generate"
+            default: 1024
+        required:
+          - prompt

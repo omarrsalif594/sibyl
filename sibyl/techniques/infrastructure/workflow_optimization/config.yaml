@@ -1,0 +1,7 @@
+technique: workflow_optimization
+description: "Workflow optimization strategies"
+version: "1.0.0"
+default_subtechnique: adaptive_retrieval
+timeout: 300
+max_retries: 3
+enabled: true

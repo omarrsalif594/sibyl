@@ -1,0 +1,4 @@
+subtechnique: structural
+description: "Structural validation"
+default_implementation: validator_basic
+enabled: true

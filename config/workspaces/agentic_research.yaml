@@ -1,0 +1,385 @@
+# Agentic Research Workspace
+# Advanced multi-agent research system with web scraping and multi-step reasoning
+# Requires cloud API keys and external MCP servers
+
+name: agentic-research
+version: "1.0"
+description: "Multi-agent research workspace with planning, execution, and synthesis"
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: anthropic
+      model: claude-3-5-sonnet-20241022
+      api_key_env: ANTHROPIC_API_KEY
+      max_tokens: 8192
+      temperature: 0.7
+
+    planner:
+      provider: anthropic
+      model: claude-3-5-sonnet-20241022
+      api_key_env: ANTHROPIC_API_KEY
+      max_tokens: 4096
+      temperature: 0.5  # Lower temperature for planning
+
+    executor:
+      provider: openai
+      model: gpt-4
+      api_key_env: OPENAI_API_KEY
+      max_tokens: 4096
+      temperature: 0.7
+
+    fast:
+      provider: openai
+      model: gpt-3.5-turbo
+      api_key_env: OPENAI_API_KEY
+      max_tokens: 2048
+      temperature: 0.5
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: openai
+      model: text-embedding-3-small
+      api_key_env: OPENAI_API_KEY
+      dimension: 1536
+
+  # Vector store configurations
+  vector_store:
+    default:
+      kind: duckdb
+      dsn: "duckdb://./data/agentic_research.db"
+      collection_name: research_docs
+      distance_metric: cosine
+
+    memory:
+      kind: faiss
+      dsn: "memory://"
+      distance_metric: cosine
+
+  # External MCP providers
+  mcp:
+    web_browser:
+      type: http_mcp
+      endpoint: http://localhost:9002
+      tools:
+        - browser.search
+        - browser.navigate
+        - browser.extract_content
+        - browser.screenshot
+      timeout_s: 60
+
+    web_scraper:
+      type: http_mcp
+      endpoint: http://localhost:9003
+      tools:
+        - scraper.extract_text
+        - scraper.extract_links
+        - scraper.extract_structured_data
+      timeout_s: 45
+
+    filesystem:
+      type: stdio_mcp
+      endpoint: mcp-server-filesystem
+      tools:
+        - read_file
+        - write_file
+        - list_directory
+        - search_files
+      timeout_s: 30
+
+# Shop configurations
+shops:
+  # RAG shop
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 1024
+      chunk_overlap: 100
+      top_k: 20
+
+  # AI Generation shop
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+      refiner: "ai_generation.refinement:iterative"
+    config:
+      max_iterations: 5
+      quality_threshold: 0.85
+
+  # Workflow shop
+  workflow:
+    techniques:
+      orchestrator: "workflow.orchestration:sequential"
+      parallel_executor: "workflow.orchestration:parallel"
+      conditional: "workflow.control:if_else"
+    config:
+      max_concurrent: 10
+      retry_failed: true
+      max_retries: 3
+
+  # Agents shop
+  agents:
+    techniques:
+      planner: "agents.planning:hierarchical"
+      executor: "agents.execution:tool_use"
+      monitor: "agents.monitoring:progress_tracker"
+    config:
+      max_steps: 20
+      planning_strategy: hierarchical
+      execution_mode: iterative
+      reflection_enabled: true
+
+# Pipeline configurations
+pipelines:
+  # Agent planning pipeline
+  plan_research:
+    shop: agents
+    description: "Create hierarchical research plan"
+    timeout_s: 120
+    steps:
+      - use: agents.planner
+        config:
+          llm_provider: planner
+          max_depth: 3
+          min_tasks_per_level: 2
+
+  # Web search and extraction pipeline
+  web_search_extract:
+    shop: workflow
+    description: "Search web and extract content"
+    timeout_s: 180
+    steps:
+      - use: workflow.parallel_executor
+        config:
+          tasks:
+            - web_search
+            - content_extraction
+          max_concurrent: 5
+
+  # Document analysis pipeline
+  analyze_documents:
+    shop: rag
+    description: "Analyze and synthesize documents"
+    timeout_s: 240
+    steps:
+      - use: rag.chunker
+        config:
+          chunk_size: 1024
+      - use: rag.retriever
+        config:
+          top_k: 30
+      - use: rag.ranker
+        config:
+          rerank_top_k: 10
+          llm_provider: fast
+      - use: rag.synthesizer
+        config:
+          llm_provider: default
+          synthesis_mode: comprehensive
+
+  # Agent execution pipeline
+  execute_research:
+    shop: agents
+    description: "Execute research plan with monitoring"
+    timeout_s: 600
+    steps:
+      - use: agents.executor
+        config:
+          llm_provider: executor
+          allow_tool_failures: true
+          max_tool_retries: 2
+      - use: agents.monitor
+        config:
+          track_progress: true
+          log_intermediate_results: true
+
+  # Multi-step research pipeline (main)
+  comprehensive_research:
+    shop: workflow
+    description: "End-to-end research with planning, execution, and synthesis"
+    timeout_s: 900
+    steps:
+      - use: workflow.orchestrator
+        config:
+          tasks:
+            - plan_research
+            - web_search_extract
+            - analyze_documents
+            - execute_research
+          sequential: true
+
+  # Iterative refinement pipeline
+  refine_research_output:
+    shop: ai_generation
+    description: "Refine research output with validation"
+    timeout_s: 300
+    steps:
+      - use: ai_generation.generator
+        config:
+          llm_provider: default
+      - use: ai_generation.validator
+        config:
+          min_quality: 0.85
+          validation_criteria:
+            - accuracy
+            - completeness
+            - coherence
+            - citation_quality
+      - use: ai_generation.refiner
+        config:
+          llm_provider: default
+          max_iterations: 5
+          improvement_threshold: 0.1
+
+  # Quick research pipeline (for simpler queries)
+  quick_research:
+    shop: rag
+    description: "Quick research using existing knowledge base"
+    timeout_s: 90
+    steps:
+      - use: rag.retriever
+        config:
+          top_k: 15
+      - use: rag.ranker
+        config:
+          rerank_top_k: 5
+      - use: rag.synthesizer
+        config:
+          llm_provider: fast
+
+  # Follow-up question generation
+  generate_followups:
+    shop: agents
+    description: "Generate follow-up research questions"
+    timeout_s: 60
+    steps:
+      - use: agents.planner
+        config:
+          llm_provider: planner
+          planning_mode: follow_up_questions
+          max_questions: 5
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-agentic-research"
+  server_version: "1.0.0"
+  tools:
+    - name: "research_topic"
+      description: "Conduct comprehensive research on a topic using multi-agent system with web search, document analysis, and synthesis"
+      pipeline: "comprehensive_research"
+      input_schema:
+        type: object
+        properties:
+          topic:
+            type: string
+            description: "The research topic or question"
+          depth:
+            type: string
+            description: "Research depth level"
+            enum:
+              - quick
+              - standard
+              - comprehensive
+              - exhaustive
+            default: standard
+          focus_areas:
+            type: array
+            description: "Optional specific areas to focus on"
+            items:
+              type: string
+          max_sources:
+            type: integer
+            description: "Maximum number of sources to consider"
+            default: 20
+        required:
+          - topic
+
+    - name: "quick_search"
+      description: "Quick search in existing knowledge base for immediate answers"
+      pipeline: "quick_research"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "Search query or question"
+        required:
+          - query
+
+    - name: "plan_research"
+      description: "Create a hierarchical research plan without executing it"
+      pipeline: "plan_research"
+      input_schema:
+        type: object
+        properties:
+          topic:
+            type: string
+            description: "Research topic"
+          objectives:
+            type: array
+            description: "Specific research objectives"
+            items:
+              type: string
+        required:
+          - topic
+
+    - name: "analyze_sources"
+      description: "Analyze and synthesize information from multiple sources"
+      pipeline: "analyze_documents"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "Analysis focus or question"
+          sources:
+            type: array
+            description: "Optional specific sources to analyze"
+            items:
+              type: string
+        required:
+          - query
+
+    - name: "refine_output"
+      description: "Refine and improve research output with quality validation"
+      pipeline: "refine_research_output"
+      input_schema:
+        type: object
+        properties:
+          content:
+            type: string
+            description: "Content to refine"
+          target_quality:
+            type: number
+            description: "Target quality score (0-1)"
+            default: 0.85
+            minimum: 0
+            maximum: 1
+        required:
+          - content
+
+    - name: "generate_followup_questions"
+      description: "Generate intelligent follow-up questions based on research results"
+      pipeline: "generate_followups"
+      input_schema:
+        type: object
+        properties:
+          context:
+            type: string
+            description: "Research context or findings"
+          num_questions:
+            type: integer
+            description: "Number of follow-up questions to generate"
+            default: 5
+            minimum: 1
+            maximum: 10
+        required:
+          - context

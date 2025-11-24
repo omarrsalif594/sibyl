@@ -1,0 +1,515 @@
+# RiverBank Finance - Compliance Analysis Workspace
+#
+# This workspace demonstrates:
+# - Code/AST analysis for compliance checking
+# - Graph analysis (Graphiti + NetworkX) for transaction risk
+# - RAG over policy documents
+# - Cross-MCP workflows with typed artifacts
+
+version: "1.0"
+name: "riverbank_finance_compliance"
+description: "Compliance analysis workspace for RiverBank Finance"
+
+# =============================================================================
+# PROVIDERS
+# =============================================================================
+
+providers:
+  # LLM providers for generation and analysis
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      temperature: 0.1  # Low temperature for compliance analysis
+      max_tokens: 2000
+
+    fast:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      temperature: 0.0
+      max_tokens: 1000
+
+  # Embeddings for RAG over policy documents
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimensions: 1536
+
+  # Vector store for policy document chunks
+  vector_store:
+    default:
+      provider: "duckdb"
+      path: "./examples/companies/riverbank_finance/.riverbank_vector_store.duckdb"
+      embedding_dimension: 1536
+
+  # MCP providers for specialized analysis
+  mcp:
+    # AST analysis for code compliance
+    ast_server:
+      type: "mcp"
+      transport: "stdio"
+      command: "python"
+      args: ["-m", "mcp_code_analyzer"]  # AST Server or similar
+      description: "AST analysis for Python/JavaScript code"
+
+    # Graph database for transaction analysis
+    graphiti:
+      type: "mcp"
+      transport: "stdio"
+      command: "python"
+      args: ["-m", "graphiti_mcp"]
+      description: "Graphiti graph database for transaction relationships"
+
+    # Optional: Serena MCP for advanced code analysis
+    serena:
+      type: "mcp"
+      transport: "stdio"
+      command: "npx"
+      args: ["-y", "@executeautomation/serena-mcp"]
+      description: "Serena MCP for JavaScript/TypeScript AST analysis"
+
+# =============================================================================
+# DATA SOURCES
+# =============================================================================
+
+data_sources:
+  # Banking code repository
+  code_repository:
+    type: "filesystem"
+    path: "./examples/companies/riverbank_finance/data/code"
+    include_patterns:
+      - "*.py"
+      - "*.js"
+      - "*.ts"
+    description: "RiverBank Finance internal banking services code"
+
+  # Policy documents
+  policy_documents:
+    type: "filesystem"
+    path: "./examples/companies/riverbank_finance/data/docs"
+    include_patterns:
+      - "*.md"
+    description: "KYC/AML policy documents and compliance procedures"
+
+  # Transaction data
+  transaction_data:
+    type: "filesystem"
+    path: "./examples/companies/riverbank_finance/data/transactions"
+    include_patterns:
+      - "*.json"
+      - "*.csv"
+    description: "Synthetic transaction data for graph analysis"
+
+# =============================================================================
+# SHOPS
+# =============================================================================
+
+shops:
+  # Code compliance analysis shop
+  code_compliance_shop:
+    description: "Analyze code for compliance with internal policies"
+    techniques:
+      # Code ingestion and AST building
+      code_loader:
+        technique: "data_integration.load_documents:default"
+        config:
+          source: "code_repository"
+
+      ast_builder:
+        technique: "code_analysis.ast_parser:default"
+        config:
+          mcp_provider: "ast_server"
+          languages: ["python", "javascript"]
+
+      # Pattern detection in AST
+      pattern_matcher:
+        technique: "code_analysis.pattern_search:default"
+        config:
+          pattern_types: ["function_definition", "calculation", "comment"]
+
+      # RAG for policy lookup
+      policy_chunker:
+        technique: "rag_pipeline.chunking:markdown"
+        config:
+          chunk_size: 1000
+          chunk_overlap: 200
+
+      policy_embedder:
+        technique: "rag_pipeline.embedding:openai"
+        config:
+          provider: "embeddings.default"
+
+      policy_retriever:
+        technique: "rag_pipeline.retrieval:semantic_search"
+        config:
+          top_k: 5
+          vector_store: "vector_store.default"
+
+      # Generate compliance report
+      report_generator:
+        technique: "ai_generation.generation:basic"
+        config:
+          llm_provider: "llm.default"
+          prompt_template: "compliance_code_review"
+
+  # Transaction graph analysis shop
+  transaction_graph_shop:
+    description: "Build and analyze transaction graphs for risk detection"
+    techniques:
+      # Load transaction data
+      transaction_loader:
+        technique: "data_integration.load_documents:default"
+        config:
+          source: "transaction_data"
+          format: "json"
+
+      # Build graph with Graphiti
+      graph_builder:
+        technique: "graph_analysis.graph_construction:graphiti"
+        config:
+          mcp_provider: "graphiti"
+          node_type: "customer"
+          edge_type: "transaction"
+
+      # Calculate graph metrics with NetworkX
+      centrality_calculator:
+        technique: "graph_analysis.metrics:networkx"
+        config:
+          algorithms:
+            - "pagerank"
+            - "betweenness_centrality"
+            - "degree_centrality"
+          output_format: "graph_metrics_artifact"
+
+      # Identify high-risk nodes
+      risk_ranker:
+        technique: "graph_analysis.ranking:default"
+        config:
+          metric: "pagerank"
+          top_n: 10
+
+      # Generate risk report
+      risk_report_generator:
+        technique: "ai_generation.generation:basic"
+        config:
+          llm_provider: "llm.default"
+          prompt_template: "transaction_risk_analysis"
+
+  # Policy explanation shop (optional)
+  policy_rag_shop:
+    description: "RAG-based policy explanation and Q&A"
+    techniques:
+      policy_chunker:
+        technique: "rag_pipeline.chunking:markdown"
+        config:
+          chunk_size: 800
+          chunk_overlap: 150
+
+      policy_embedder:
+        technique: "rag_pipeline.embedding:openai"
+        config:
+          provider: "embeddings.default"
+
+      policy_retriever:
+        technique: "rag_pipeline.retrieval:semantic_search"
+        config:
+          top_k: 5
+
+      query_expander:
+        technique: "rag_pipeline.query_processing:expansion"
+        config:
+          num_variations: 3
+
+      answer_generator:
+        technique: "ai_generation.generation:basic"
+        config:
+          llm_provider: "llm.default"
+          include_citations: true
+
+# =============================================================================
+# PIPELINES
+# =============================================================================
+
+pipelines:
+  # Pipeline 1: Code Compliance Check
+  code_compliance_check:
+    description: "Analyze banking code for compliance with interest calculation policies"
+    shop: "code_compliance_shop"
+    input_schema:
+      type: "object"
+      properties:
+        file_path:
+          type: "string"
+          description: "Path to code file to analyze"
+        policy_reference:
+          type: "string"
+          description: "Policy ID to check against (e.g., INT-001, INT-002)"
+      required: ["file_path"]
+
+    steps:
+      # Step 1: Load and parse code file
+      - name: "load_code"
+        use: "code_compliance_shop.code_loader"
+        input:
+          file_path: "{{ input.file_path }}"
+        output: "code_content"
+
+      # Step 2: Build AST
+      - name: "build_ast"
+        use: "code_compliance_shop.ast_builder"
+        input:
+          code: "{{ steps.load_code.output }}"
+          language: "python"  # or detect from file extension
+        output: "ast_artifact"
+
+      # Step 3: Search for interest calculation patterns
+      - name: "find_calculations"
+        use: "code_compliance_shop.pattern_matcher"
+        input:
+          ast: "{{ steps.build_ast.output }}"
+          patterns:
+            - "function_name contains 'calculate'"
+            - "function_name contains 'interest'"
+            - "contains math.pow or Math.pow"
+        output: "calculation_patterns"
+
+      # Step 4: Retrieve relevant policy sections
+      - name: "retrieve_policies"
+        use: "code_compliance_shop.policy_retriever"
+        input:
+          query: "interest calculation formula compound simple {{ input.policy_reference }}"
+          source: "policy_documents"
+        output: "policy_context"
+
+      # Step 5: Generate compliance report
+      - name: "generate_report"
+        use: "code_compliance_shop.report_generator"
+        input:
+          code_patterns: "{{ steps.find_calculations.output }}"
+          policy_context: "{{ steps.retrieve_policies.output }}"
+          prompt: |
+            You are a compliance analyst for RiverBank Finance.
+
+            Analyze the following code patterns for compliance with our interest calculation policies:
+
+            Code Patterns:
+            {{ steps.find_calculations.output }}
+
+            Relevant Policy Sections:
+            {{ steps.retrieve_policies.output }}
+
+            Tasks:
+            1. Identify any calculation formulas in the code
+            2. Compare them to the policy requirements
+            3. Flag any deviations or incorrect implementations
+            4. Assess severity (LOW, MEDIUM, HIGH, CRITICAL)
+            5. Provide specific remediation recommendations
+
+            Focus on:
+            - Compound interest formula correctness (must use A = P(1 + r/n)^(nt))
+            - Day count conventions (360 vs 365 days)
+            - Rounding and precision
+
+            Format as structured compliance report.
+        output: "compliance_report"
+
+    output: "{{ steps.generate_report.output }}"
+    timeout_s: 300
+
+  # Pipeline 2: Transaction Graph Risk Analysis
+  risk_graph_analysis:
+    description: "Build transaction graph and identify high-risk customers using centrality metrics"
+    shop: "transaction_graph_shop"
+    input_schema:
+      type: "object"
+      properties:
+        transaction_file:
+          type: "string"
+          description: "Path to transaction data file"
+        metric_type:
+          type: "string"
+          enum: ["pagerank", "betweenness", "degree"]
+          default: "pagerank"
+          description: "Graph centrality metric to use for risk ranking"
+        top_n:
+          type: "integer"
+          default: 10
+          description: "Number of top-risk customers to return"
+      required: ["transaction_file"]
+
+    steps:
+      # Step 1: Load transaction data
+      - name: "load_transactions"
+        use: "transaction_graph_shop.transaction_loader"
+        input:
+          file_path: "{{ input.transaction_file }}"
+        output: "transaction_data"
+
+      # Step 2: Build graph in Graphiti
+      - name: "build_graph"
+        use: "transaction_graph_shop.graph_builder"
+        input:
+          transactions: "{{ steps.load_transactions.output }}"
+          node_id_field: "customer_id"
+          edge_fields:
+            source: "customer_id"
+            target: "counterparty"
+            weight: "amount"
+        output: "graph_artifact"
+
+      # Step 3: Calculate centrality metrics with NetworkX
+      - name: "calculate_centrality"
+        use: "transaction_graph_shop.centrality_calculator"
+        input:
+          graph: "{{ steps.build_graph.output }}"
+          algorithms:
+            - "{{ input.metric_type | default('pagerank') }}"
+        output: "graph_metrics_artifact"
+
+      # Step 4: Rank customers by risk score
+      - name: "rank_customers"
+        use: "transaction_graph_shop.risk_ranker"
+        input:
+          metrics: "{{ steps.calculate_centrality.output }}"
+          top_n: "{{ input.top_n }}"
+        output: "ranked_customers"
+
+      # Step 5: Generate risk analysis report
+      - name: "generate_risk_report"
+        use: "transaction_graph_shop.risk_report_generator"
+        input:
+          ranked_customers: "{{ steps.rank_customers.output }}"
+          graph_metrics: "{{ steps.calculate_centrality.output }}"
+          transaction_data: "{{ steps.load_transactions.output }}"
+          prompt: |
+            You are a financial crimes analyst for RiverBank Finance.
+
+            Analyze the following transaction graph metrics to identify high-risk customers:
+
+            Top Risk Customers (by centrality):
+            {{ steps.rank_customers.output }}
+
+            Graph Metrics:
+            {{ steps.calculate_centrality.output }}
+
+            Transaction Patterns:
+            {{ steps.load_transactions.output.suspicious_patterns }}
+
+            Tasks:
+            1. Interpret the centrality scores in terms of transaction risk
+            2. Identify suspicious patterns (structuring, circular transactions, velocity abuse)
+            3. Cross-reference with known AML red flags from policy AML-001
+            4. Provide risk level assessment (LOW, MEDIUM, HIGH, CRITICAL)
+            5. Recommend actions (enhanced monitoring, SAR filing, account restriction)
+
+            Focus on:
+            - High-centrality nodes (potential money mules or hubs)
+            - Isolated clusters (potential money laundering rings)
+            - Velocity patterns
+            - Structuring indicators
+
+            Format as structured risk assessment report.
+        output: "risk_report"
+
+    output: "{{ steps.generate_risk_report.output }}"
+    timeout_s: 300
+
+  # Pipeline 3: Policy Explainer (Optional)
+  policy_explainer:
+    description: "RAG-based policy explanation for engineers and compliance staff"
+    shop: "policy_rag_shop"
+    input_schema:
+      type: "object"
+      properties:
+        question:
+          type: "string"
+          description: "Question about compliance policy"
+        policy_area:
+          type: "string"
+          enum: ["KYC", "AML", "interest_rates", "transactions"]
+          description: "Area of policy to focus on"
+      required: ["question"]
+
+    steps:
+      # Step 1: Expand query for better retrieval
+      - name: "expand_query"
+        use: "policy_rag_shop.query_expander"
+        input:
+          query: "{{ input.question }}"
+          context: "{{ input.policy_area }}"
+        output: "expanded_queries"
+
+      # Step 2: Retrieve relevant policy sections
+      - name: "retrieve_policy"
+        use: "policy_rag_shop.policy_retriever"
+        input:
+          queries: "{{ steps.expand_query.output }}"
+          source: "policy_documents"
+        output: "policy_chunks"
+
+      # Step 3: Generate explanation
+      - name: "generate_explanation"
+        use: "policy_rag_shop.answer_generator"
+        input:
+          question: "{{ input.question }}"
+          context: "{{ steps.retrieve_policy.output }}"
+          prompt: |
+            You are a compliance expert at RiverBank Finance helping to explain policies.
+
+            Question: {{ input.question }}
+
+            Relevant Policy Sections:
+            {{ steps.retrieve_policy.output }}
+
+            Provide a clear, beginner-friendly explanation that:
+            1. Answers the question directly
+            2. References specific policy sections
+            3. Provides practical examples
+            4. Explains the "why" behind the policy
+            5. Includes citations to policy IDs
+
+            Audience: New engineers and compliance staff.
+        output: "explanation"
+
+    output: "{{ steps.generate_explanation.output }}"
+    timeout_s: 180
+
+# =============================================================================
+# MCP TOOL EXPOSURE
+# =============================================================================
+
+mcp_tools:
+  # Expose pipelines as MCP tools for AI assistants
+  - pipeline: "code_compliance_check"
+    name: "check_code_compliance"
+    description: "Analyze banking code for compliance with interest calculation policies"
+
+  - pipeline: "risk_graph_analysis"
+    name: "analyze_transaction_risk"
+    description: "Build transaction graph and identify high-risk customers"
+
+  - pipeline: "policy_explainer"
+    name: "explain_policy"
+    description: "Get beginner-friendly explanations of compliance policies"
+
+# =============================================================================
+# OBSERVABILITY
+# =============================================================================
+
+observability:
+  logging:
+    level: "INFO"
+    format: "json"
+    file: "./examples/companies/riverbank_finance/logs/compliance.log"
+
+  tracing:
+    enabled: true
+    trace_id_header: "X-Trace-ID"
+
+  metrics:
+    enabled: true
+    namespace: "riverbank_finance"

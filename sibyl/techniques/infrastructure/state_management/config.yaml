@@ -1,0 +1,7 @@
+technique: state_management
+description: "State persistence and management"
+version: "1.0.0"
+default_subtechnique: default
+timeout: 300
+max_retries: 3
+enabled: true

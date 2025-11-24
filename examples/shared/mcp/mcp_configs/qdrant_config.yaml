@@ -1,0 +1,30 @@
+# Qdrant Vector Store Configuration
+# Usage: Include this snippet in your workspace.yaml
+
+mcps:
+  qdrant:
+    enabled: true
+    host: localhost
+    port: 6333
+
+    # Collection settings
+    collection_name: documents
+    vector_size: 1536  # For OpenAI ada-002 embeddings
+    distance: Cosine   # Cosine, Euclid, or Dot
+
+    # Performance tuning
+    batch_size: 100
+    parallel: 4
+
+    # Optional: API key if using Qdrant Cloud
+    # api_key: ${QDRANT_API_KEY}
+    # url: https://your-cluster.qdrant.io
+
+# Example usage in pipeline:
+# techniques:
+#   - name: vector_search
+#     type: rag_pipeline/search/vector_search
+#     config:
+#       mcp_name: qdrant
+#       collection: documents
+#       top_k: 5

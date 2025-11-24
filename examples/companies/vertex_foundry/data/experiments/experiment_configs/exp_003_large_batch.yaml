@@ -1,0 +1,37 @@
+experiment_id: exp_003
+name: "Large Batch Size Training"
+description: "Experiment with larger batch size for better GPU utilization"
+
+model:
+  type: ConvNet
+  num_classes: 10
+  dropout_rate: 0.5
+
+hyperparameters:
+  learning_rate: 0.001
+  batch_size: 128
+  epochs: 50
+  weight_decay: 0.0001
+  optimizer: adam
+
+dataset:
+  name: CIFAR10
+  train_split: train
+  val_split: val
+  num_workers: 4
+
+resources:
+  gpu_type: "V100"
+  gpu_count: 1
+  memory_gb: 32
+  estimated_duration_hours: 1.5
+
+tracking:
+  log_interval: 100
+  checkpoint_interval: 5
+  tensorboard: true
+
+tags:
+  - large_batch
+  - gpu_optimization
+  - cifar10

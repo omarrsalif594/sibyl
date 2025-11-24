@@ -1,0 +1,4 @@
+subtechnique: fallback_strategies
+description: "Fallback strategies"
+default_implementation: cascade
+enabled: true

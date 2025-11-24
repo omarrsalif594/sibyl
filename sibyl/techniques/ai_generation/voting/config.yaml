@@ -1,0 +1,73 @@
+technique: voting
+description: "Voting algorithms and threshold-based consensus mechanisms"
+version: "1.0.0"
+default_subtechnique: threshold_voting
+default_implementation: default
+timeout: 30
+max_retries: 3
+enabled: true
+
+# Global voting settings (loaded from core config)
+# These can be overridden here or via environment variables
+use_core_config: true
+core_config_section: consensus
+
+# Threshold voting subtechnique configuration
+threshold_voting:
+  description: "k-voting with configurable thresholds and confidence requirements"
+  default_implementation: default
+  enabled: true
+
+  # Voting parameters (from consensus/protocol.py:81-90)
+  # These will be loaded from core config by default
+  voting_policy:
+    initial_n: 3              # Initial number of voting agents
+    max_n: 5                  # Maximum agents for consensus
+    k_threshold: 3            # Votes needed for consensus
+    min_k_fallback: 2         # Minimum fallback votes
+
+    # Timeouts (seconds)
+    timeout_seconds: 10.0     # Overall vote timeout
+    per_agent_timeout: 5.0    # Per-agent timeout
+
+    # Confidence thresholds (0.0-1.0)
+    min_avg_confidence: 0.6   # Minimum average confidence
+    red_flag_escalation_threshold: 0.3  # Red flag escalation trigger
+
+    # Cost controls (USD cents)
+    cost_ceiling_cents: 2.0   # Per-operation cost ceiling
+    enable_early_commit: true # Cancel agents on early consensus
+
+  # Split vote detection
+  split_detection:
+    threshold: 0.4            # Minimum vote share to be significant
+    enabled: true
+
+  # Vote ranking method
+  ranking:
+    method: "count_confidence_order"  # count_confidence_order, confidence_weighted, temporal
+
+# Confidence voting subtechnique configuration
+confidence_voting:
+  description: "Weight votes by confidence scores"
+  default_implementation: default
+  enabled: true
+
+  # Confidence weighting
+  weighting:
+    method: "linear"          # linear, exponential, threshold
+    min_weight: 0.1
+    max_weight: 1.0
+
+# Adaptive voting subtechnique configuration
+adaptive_voting:
+  description: "Dynamically adjust voting parameters based on context"
+  default_implementation: default
+  enabled: false
+
+  # Adaptation parameters
+  adaptation:
+    enable_dynamic_n: true    # Adjust agent count dynamically
+    enable_dynamic_k: true    # Adjust threshold dynamically
+    min_n: 2
+    max_n: 7

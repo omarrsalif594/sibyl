@@ -1,0 +1,115 @@
+# Example workspace using custom Echo LLM provider
+# This demonstrates how to configure and use a custom provider in Sibyl
+
+name: "echo-provider-demo"
+description: "Demo workspace for custom Echo LLM provider"
+version: "1.0"
+
+# Provider configurations
+providers:
+  llm:
+    # Custom Echo provider for testing
+    echo:
+      provider: "echo"
+      model: "echo-1"
+      # Custom config for echo provider
+      prefix: "[ECHO] "
+      simulate_latency_ms: 10
+
+    # Custom Transform provider
+    transform:
+      provider: "transform"
+      model: "transform-1"
+      transform: "uppercase"  # Available: uppercase, lowercase, reverse, title
+
+    # Real provider for comparison (optional)
+    # openai:
+    #   provider: "openai"
+    #   model: "gpt-4"
+    #   api_key_env: "OPENAI_API_KEY"
+
+  embeddings:
+    # Minimal embeddings provider for demo
+    default:
+      provider: "local_sentence_transformer"
+      model: "all-MiniLM-L6-v2"
+      dimension: 384
+
+  vector_store:
+    # Minimal vector store for demo
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/vectors.duckdb"
+      collection_name: "documents"
+
+# Shop configurations using custom providers
+shops:
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+
+    config:
+      # Use echo provider by default
+      llm_provider: "echo"
+      max_iterations: 3
+
+  ai_generation_transform:
+    techniques:
+      generator: "ai_generation.generation:basic"
+
+    config:
+      # Use transform provider
+      llm_provider: "transform"
+
+# Pipeline configurations
+pipelines:
+  echo_generation:
+    shop: "ai_generation"
+    entrypoint: "generate.run"
+    description: "Generate text using Echo provider (for testing)"
+    timeout_s: 30
+    steps:
+      - use: "ai_generation.generator"
+        config:
+          prompt_template: "simple"
+          max_tokens: 100
+
+  transform_generation:
+    shop: "ai_generation_transform"
+    entrypoint: "generate.run"
+    description: "Generate text using Transform provider"
+    timeout_s: 30
+    steps:
+      - use: "ai_generation.generator"
+        config:
+          prompt_template: "simple"
+
+# MCP tool exposure (optional)
+mcp:
+  server_name: "echo-provider-demo"
+  server_version: "1.0.0"
+  tools:
+    - name: "echo_complete"
+      description: "Complete text using echo provider (returns input with prefix)"
+      pipeline: "echo_generation"
+      input_schema:
+        type: "object"
+        properties:
+          prompt:
+            type: "string"
+            description: "The prompt to echo"
+        required:
+          - "prompt"
+
+    - name: "transform_text"
+      description: "Transform text using uppercase transformation"
+      pipeline: "transform_generation"
+      input_schema:
+        type: "object"
+        properties:
+          text:
+            type: "string"
+            description: "The text to transform"
+        required:
+          - "text"

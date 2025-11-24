@@ -1,0 +1,4 @@
+subtechnique: retrieval_cache
+description: "Retrieval result caching"
+default_implementation: query_hash
+enabled: true

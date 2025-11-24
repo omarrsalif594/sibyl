@@ -1,0 +1,149 @@
+{
+  "dashboard": {
+    "title": "Sibyl MCP Server - Overview",
+    "tags": ["sibyl", "mcp", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=~\"sibyl.*\"}",
+            "legendFormat": "{{ job }}"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "orientation": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 1, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Memory Usage (GB)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=~\"sibyl.*\"} / 1024 / 1024 / 1024",
+            "legendFormat": "{{ job }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "yaxes": [
+          {"format": "decgbytes", "label": "Memory"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "CPU Usage (%)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=~\"sibyl.*\"}[5m]) * 100",
+            "legendFormat": "{{ job }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "yaxes": [
+          {"format": "percent", "label": "CPU", "max": 100},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Request Rate (req/s)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(sibyl_requests_total[5m])",
+            "legendFormat": "{{ job }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "yaxes": [
+          {"format": "reqps", "label": "Requests/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(sibyl_errors_total[5m])",
+            "legendFormat": "{{ job }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "yaxes": [
+          {"format": "short", "label": "Errors/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "DuckDB Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(sibyl_duckdb_operations_total[5m])",
+            "legendFormat": "{{ operation }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+        "yaxes": [
+          {"format": "ops", "label": "Operations/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "API Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(sibyl_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{ job }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+        "yaxes": [
+          {"format": "s", "label": "Response Time"},
+          {"format": "short"}
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+    },
+    "annotations": {
+      "list": []
+    },
+    "templating": {
+      "list": []
+    }
+  }
+}

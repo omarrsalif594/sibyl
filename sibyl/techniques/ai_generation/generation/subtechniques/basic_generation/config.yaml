@@ -1,0 +1,4 @@
+subtechnique: basic_generation
+description: "Basic generation methods"
+default_implementation: prompt_based
+enabled: true

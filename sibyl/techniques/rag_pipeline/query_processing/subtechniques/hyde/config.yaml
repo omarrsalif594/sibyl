@@ -1,0 +1,4 @@
+subtechnique: hyde
+description: "Hypothetical Document Embeddings"
+default_implementation: simple_hyde
+enabled: true

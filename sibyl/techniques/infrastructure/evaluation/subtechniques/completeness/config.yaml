@@ -1,0 +1,4 @@
+subtechnique: completeness
+description: "Completeness assessment"
+default_implementation: coverage_check
+enabled: true

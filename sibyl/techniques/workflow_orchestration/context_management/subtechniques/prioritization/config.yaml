@@ -1,0 +1,4 @@
+subtechnique: prioritization
+description: "Context prioritization"
+default_implementation: recency
+enabled: true

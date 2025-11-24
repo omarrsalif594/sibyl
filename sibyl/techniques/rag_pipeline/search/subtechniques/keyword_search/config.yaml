@@ -1,0 +1,4 @@
+subtechnique: keyword_search
+description: "Keyword-based search"
+default_implementation: bm25
+enabled: true

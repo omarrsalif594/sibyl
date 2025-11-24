@@ -1,0 +1,4 @@
+subtechnique: access_control
+description: "Access control mechanisms"
+default_implementation: rbac
+enabled: true

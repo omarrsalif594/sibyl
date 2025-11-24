@@ -1,0 +1,89 @@
+{
+  "status": "completed",
+  "outputs": {
+    "pattern_artifact": {
+      "pattern_name": "acme_ceo_sarah_communication_patterns",
+      "category": "communication",
+      "confidence": 0.85,
+      "description": "Brief, action-oriented, fast decision-making communication style",
+      "preferences": {
+        "communication_style": "brief_bullet_points",
+        "decision_speed": "fast",
+        "update_frequency": "weekly",
+        "response_time": "24_hours",
+        "meeting_duration": "30_minutes_max",
+        "detail_level": "executive_summary",
+        "feedback_style": "direct_and_generous"
+      },
+      "pattern_details": {
+        "communication": {
+          "brevity": "Prefers bullet points over long emails",
+          "speed": "Makes decisions quickly, values momentum",
+          "tone": "Direct and casual, not formal",
+          "format": "Three bullet points, not a dissertation"
+        },
+        "decision_making": {
+          "style": "Fast decisions, doesn't overthink",
+          "trust": "Trusts expertise, delegates effectively",
+          "context": "Board pressure, competitive urgency",
+          "examples": [
+            "Go with Stripe. Don't overthink it.",
+            "Speed > perfection"
+          ]
+        },
+        "expectations": {
+          "status_updates": "Weekly, brief, executive-level only",
+          "response_time": "24 hours for email, 2 hours for urgent",
+          "escalation": "Flag blockers she can help with",
+          "no_need_for": "Technical details (Mike handles those)"
+        },
+        "budget_sensitivity": {
+          "priority": "Timeline > Features > Budget",
+          "willing_to_spend": "If it supports timeline goals",
+          "example": "Can you deliver loyalty program AND hit June 30? If yes: approved. If no: phase 2."
+        }
+      },
+      "observations": [
+        "Sends late emails but says 'ignore until morning'",
+        "Gives specific, generous praise",
+        "Remembers who did what, credits individuals",
+        "Always CC Jennifer on major discussions"
+      ],
+      "metadata": {
+        "provider": "in_memoria",
+        "client": "Acme CEO Sarah",
+        "email_count": 10,
+        "analysis_duration": "6 months"
+      }
+    },
+    "summary": "Sarah (Acme CEO) prefers brief, action-oriented communication. She makes decisions fast and trusts the team's expertise. Key preferences: (1) Three bullet points, not dissertations, (2) Weekly status updates at executive level, (3) Flag blockers she can help with, (4) Speed > perfection. Always CC Jennifer on major discussions.",
+    "client_entity": {
+      "name": "Acme CEO Sarah",
+      "entity_type": "client",
+      "stored": true
+    },
+    "pattern_relations": [
+      {
+        "from": "Acme CEO Sarah",
+        "to": "communication_style",
+        "relation_type": "prefers"
+      },
+      {
+        "from": "Acme CEO Sarah",
+        "to": "decision_making",
+        "relation_type": "exhibits"
+      }
+    ]
+  },
+  "metadata": {
+    "techniques_used": [
+      "rag",
+      "sequential_thinking",
+      "pattern_artifact"
+    ],
+    "mcp_providers": [
+      "in_memoria",
+      "sequential_thinking"
+    ]
+  }
+}

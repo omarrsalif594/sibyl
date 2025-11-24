@@ -1,0 +1,4 @@
+subtechnique: llm_rerank
+description: "LLM-based reranking"
+default_implementation: prompt_based
+enabled: true

@@ -1,0 +1,711 @@
+# ====================================================================================
+# SIBYL CORE CONFIGURATION SCHEMA
+# ====================================================================================
+# This schema validates core_defaults.yaml and custom configuration files.
+# It ensures all parameters are within acceptable ranges and types.
+# ====================================================================================
+
+consensus:
+  type: object
+  required: true
+  properties:
+    initial_n:
+      type: integer
+      min: 1
+      max: 10
+      description: "Initial number of voting agents"
+    max_n:
+      type: integer
+      min: 1
+      max: 20
+      description: "Maximum agents for consensus"
+    k_threshold:
+      type: integer
+      min: 1
+      max: 10
+      description: "Votes needed for consensus"
+    min_k_fallback:
+      type: integer
+      min: 1
+      max: 5
+      description: "Minimum fallback votes"
+    timeout_seconds:
+      type: float
+      min: 0.1
+      max: 300.0
+      description: "Overall vote timeout"
+    per_agent_timeout:
+      type: float
+      min: 0.1
+      max: 60.0
+      description: "Per-agent timeout"
+    min_avg_confidence:
+      type: float
+      min: 0.0
+      max: 1.0
+      description: "Minimum average confidence"
+    split_vote_threshold:
+      type: float
+      min: 0.0
+      max: 1.0
+      description: "Threshold for split vote detection"
+    red_flag_escalation_threshold:
+      type: float
+      min: 0.0
+      max: 1.0
+      description: "Red flag escalation trigger"
+    cost_ceiling_cents:
+      type: float
+      min: 0.0
+      max: 100.0
+      description: "Per-operation cost ceiling (USD cents)"
+    enable_early_commit:
+      type: boolean
+      description: "Cancel agents on early consensus"
+    max_cost_per_pipeline_cents:
+      type: float
+      min: 0.0
+      max: 1000.0
+      description: "Maximum cost per pipeline (USD cents)"
+    pipeline_costs:
+      type: object
+      properties:
+        diagnosis:
+          type: float
+          min: 0.0
+          max: 10.0
+        strategy:
+          type: float
+          min: 0.0
+          max: 10.0
+        location:
+          type: float
+          min: 0.0
+          max: 10.0
+        generation:
+          type: float
+          min: 0.0
+          max: 10.0
+        validation:
+          type: float
+          min: 0.0
+          max: 10.0
+    vote_ranking:
+      type: object
+      properties:
+        method:
+          type: string
+          enum: ["count_confidence_order", "confidence_weighted", "temporal"]
+
+budget:
+  type: object
+  required: true
+  properties:
+    model_tier_initial:
+      type: integer
+      min: 0
+      max: 5
+      description: "Initial model tier (0=best, higher=cheaper)"
+    model_selection:
+      type: object
+      properties:
+        strategy:
+          type: string
+          enum: ["downgrade_cascade", "fixed_tier", "adaptive"]
+        allow_downgrade:
+          type: boolean
+    phase_allocation:
+      type: object
+      properties:
+        planning:
+          type: float
+          min: 0.0
+          max: 1.0
+        execution:
+          type: float
+          min: 0.0
+          max: 1.0
+        validation:
+          type: float
+          min: 0.0
+          max: 1.0
+
+session:
+  type: object
+  required: true
+  properties:
+    rotation:
+      type: object
+      properties:
+        operation_poll_ms:
+          type: integer
+          min: 10
+          max: 10000
+        status_log_interval_seconds:
+          type: integer
+          min: 1
+          max: 3600
+        early_rotation_threshold:
+          type: float
+          min: 0.0
+          max: 1.0
+        force_rotation_threshold:
+          type: float
+          min: 0.0
+          max: 1.0
+    circuit_breaker:
+      type: object
+      properties:
+        failure_threshold:
+          type: integer
+          min: 1
+          max: 100
+        recovery_timeout_seconds:
+          type: integer
+          min: 1
+          max: 3600
+        half_open_max_calls:
+          type: integer
+          min: 1
+          max: 10
+    summarization:
+      type: object
+      properties:
+        trigger_message_count:
+          type: integer
+          min: 1
+          max: 1000
+        cache_max_entries:
+          type: integer
+          min: 1
+          max: 10000
+    orphan_repair:
+      type: object
+      properties:
+        retry_limit:
+          type: integer
+          min: 1
+          max: 10
+    state_writer:
+      type: object
+      properties:
+        wal_quota_mb:
+          type: integer
+          min: 1
+          max: 100000
+        blob_quota_mb:
+          type: integer
+          min: 1
+          max: 100000
+        checkpoint_threshold_mb:
+          type: integer
+          min: 1
+          max: 10000
+        vacuum_threshold_mb:
+          type: integer
+          min: 1
+          max: 10000
+
+security:
+  type: object
+  required: true
+  properties:
+    rate_limiter:
+      type: object
+      properties:
+        default_rpm:
+          type: integer
+          min: 1
+          max: 100000
+        window_seconds:
+          type: integer
+          min: 1
+          max: 3600
+        cleanup_interval_seconds:
+          type: integer
+          min: 1
+          max: 86400
+        exempt_ips:
+          type: array
+          items:
+            type: string
+    secrets:
+      type: object
+      properties:
+        min_entropy:
+          type: float
+          min: 0.0
+          max: 10.0
+        min_length:
+          type: integer
+          min: 1
+          max: 1024
+        enabled_detectors:
+          type: array
+          items:
+            type: string
+    input_validation:
+      type: object
+      properties:
+        max_size_kb:
+          type: integer
+          min: 1
+          max: 1048576  # 1 GB in KB
+    shape_validation:
+      type: object
+      properties:
+        max_retry_attempts:
+          type: integer
+          min: 1
+          max: 10
+
+learning:
+  type: object
+  required: true
+  properties:
+    pattern_discovery:
+      type: object
+      properties:
+        min_frequency:
+          type: integer
+          min: 1
+          max: 1000
+        min_success_rate:
+          type: float
+          min: 0.0
+          max: 1.0
+        strategy:
+          type: string
+          enum: ["frequency_based", "temporal", "weighted"]
+    pattern_grouping:
+      type: object
+      properties:
+        method:
+          type: string
+          enum: ["keyword_based", "semantic", "hybrid"]
+        keywords_count:
+          type: integer
+          min: 1
+          max: 20
+    suggested_fixes:
+      type: object
+      properties:
+        top_k:
+          type: integer
+          min: 1
+          max: 100
+    confidence_calculation:
+      type: object
+      properties:
+        formula:
+          type: string
+          enum: ["weighted", "average", "maximum"]
+    category_naming:
+      type: object
+      properties:
+        max_length:
+          type: integer
+          min: 1
+          max: 256
+        strategy:
+          type: string
+          enum: ["keyword_truncated", "full", "abbreviated"]
+    error_keywords:
+      type: array
+      items:
+        type: string
+    storage:
+      type: object
+      properties:
+        retention_days:
+          type: integer
+          min: 1
+          max: 3650
+        max_patterns:
+          type: integer
+          min: 1
+          max: 1000000
+
+llm:
+  type: object
+  required: true
+  properties:
+    retry:
+      type: object
+      properties:
+        max_retries:
+          type: integer
+          min: 0
+          max: 10
+        base_delay:
+          type: float
+          min: 0.1
+          max: 60.0
+        max_delay:
+          type: float
+          min: 1.0
+          max: 600.0
+        jitter_percent:
+          type: integer
+          min: 0
+          max: 100
+        backoff_strategy:
+          type: string
+          enum: ["exponential_jitter", "exponential", "linear", "constant"]
+    rate_limit:
+      type: object
+      properties:
+        default_concurrent:
+          type: integer
+          min: 1
+          max: 1000
+        default_rpm:
+          type: integer
+          min: 1
+          max: 100000
+        window_seconds:
+          type: integer
+          min: 1
+          max: 3600
+    circuit_breaker:
+      type: object
+      properties:
+        failure_threshold:
+          type: integer
+          min: 1
+          max: 100
+        cooldown_seconds:
+          type: integer
+          min: 1
+          max: 3600
+        strategy:
+          type: string
+          enum: ["threshold_based", "error_rate", "adaptive"]
+    token_counter:
+      type: object
+      properties:
+        safety_margin:
+          type: float
+          min: 1.0
+          max: 2.0
+        chars_per_token:
+          type: integer
+          min: 1
+          max: 10
+    features:
+      type: object
+      properties:
+        enable_prompt_caching:
+          type: boolean
+        enable_extended_thinking:
+          type: boolean
+        enable_pdfs:
+          type: boolean
+        enable_computer_use:
+          type: boolean
+    json_repair:
+      type: object
+      properties:
+        max_attempts:
+          type: integer
+          min: 1
+          max: 10
+    lifecycle:
+      type: object
+      properties:
+        shutdown_timeout_seconds:
+          type: float
+          min: 0.0
+          max: 300.0
+        force_shutdown_delay_seconds:
+          type: float
+          min: 0.0
+          max: 60.0
+
+agent:
+  type: object
+  required: false
+  properties:
+    max_tools_per_plan:
+      type: integer
+      min: 1
+      max: 100
+    cost_estimation_factor:
+      type: integer
+      min: 1
+      max: 100000
+    time_estimation_factor:
+      type: integer
+      min: 1
+      max: 3600
+    performance_threshold_seconds:
+      type: integer
+      min: 1
+      max: 3600
+    confidence:
+      type: object
+      properties:
+        base_confidence:
+          type: float
+          min: 0.0
+          max: 1.0
+        tool_weight:
+          type: float
+          min: 0.0
+          max: 1.0
+        max_confidence:
+          type: float
+          min: 0.0
+          max: 1.0
+    quality:
+      type: object
+      properties:
+        failure_penalty:
+          type: integer
+          max: 0
+        critical_penalty:
+          type: integer
+          max: 0
+        high_penalty:
+          type: integer
+          max: 0
+        medium_penalty:
+          type: integer
+          max: 0
+    relevance:
+      type: object
+      properties:
+        high_threshold:
+          type: float
+          min: 0.0
+          max: 1.0
+        medium_threshold:
+          type: float
+          min: 0.0
+          max: 1.0
+
+tools:
+  type: object
+  required: false
+  properties:
+    execution:
+      type: object
+      properties:
+        default_timeout_seconds:
+          type: float
+          min: 0.1
+          max: 3600.0
+        slow_tool_threshold_seconds:
+          type: float
+          min: 0.1
+          max: 300.0
+
+orchestration:
+  type: object
+  required: false
+  properties:
+    wave_max_parallel:
+      type: integer
+      min: 1
+      max: 1000
+    context_merge:
+      type: object
+      properties:
+        strategy:
+          type: string
+          enum: ["dict_merge", "shallow_merge", "deep_merge", "replace"]
+    consensus_aggregation:
+      type: object
+      properties:
+        method:
+          type: string
+          enum: ["average_confidence", "weighted_vote", "maximum_confidence"]
+    error_reporting:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: ["structured", "plain", "json"]
+        include_context:
+          type: boolean
+
+quality_control:
+  type: object
+  required: false
+  properties:
+    quorum:
+      type: object
+      properties:
+        default_k:
+          type: integer
+          min: 1
+          max: 20
+        max_spawns:
+          type: integer
+          min: 1
+          max: 100
+        cost_usd:
+          type: float
+          min: 0.0
+          max: 1000.0
+    learned_pattern_priority:
+      type: integer
+      min: 0
+      max: 100
+
+checkpointing:
+  type: object
+  required: false
+  properties:
+    default_path:
+      type: string
+    retention_days:
+      type: integer
+      min: 0
+      max: 3650
+    filename_format:
+      type: string
+    naming_strategy:
+      type: string
+      enum: ["sequence_based", "timestamp", "uuid"]
+
+graph:
+  type: object
+  required: false
+  properties:
+    path_max_hops:
+      type: integer
+      min: 1
+      max: 1000
+    search:
+      type: object
+      properties:
+        max_results:
+          type: integer
+          min: 1
+          max: 100000
+        similarity_threshold:
+          type: float
+          min: 0.0
+          max: 1.0
+
+search:
+  type: object
+  required: false
+  properties:
+    vector_index:
+      type: object
+      properties:
+        default_top_k:
+          type: integer
+          min: 1
+          max: 1000
+        max_top_k:
+          type: integer
+          min: 1
+          max: 10000
+        similarity_metric:
+          type: string
+          enum: ["cosine", "euclidean", "dot_product", "manhattan"]
+        batch_size:
+          type: integer
+          min: 1
+          max: 100000
+
+observability:
+  type: object
+  required: false
+  properties:
+    logging:
+      type: object
+      properties:
+        default_level:
+          type: string
+          enum: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        structured_format:
+          type: boolean
+    metrics:
+      type: object
+      properties:
+        sampling_rate:
+          type: float
+          min: 0.0
+          max: 1.0
+        export_interval_seconds:
+          type: integer
+          min: 1
+          max: 3600
+        enable_histograms:
+          type: boolean
+        histogram_buckets:
+          type: array
+          items:
+            type: float
+    execution:
+      type: object
+      properties:
+        enable_tracing:
+          type: boolean
+        trace_sample_rate:
+          type: float
+          min: 0.0
+          max: 1.0
+
+performance:
+  type: object
+  required: false
+  properties:
+    ann:
+      type: object
+      properties:
+        flat_threshold:
+          type: integer
+          min: 1
+          max: 1000000
+        ivf_threshold:
+          type: integer
+          min: 1
+          max: 10000000
+        faiss_nlist:
+          type: integer
+          min: 1
+          max: 100000
+        faiss_nprobe:
+          type: integer
+          min: 1
+          max: 1000
+        faiss_ef_construction:
+          type: integer
+          min: 1
+          max: 1000
+        faiss_ef_search:
+          type: integer
+          min: 1
+          max: 1000
+        selection_strategy:
+          type: string
+          enum: ["size_based", "performance_based", "adaptive"]
+
+config:
+  type: object
+  required: false
+  properties:
+    priorities:
+      type: object
+      properties:
+        cli_args:
+          type: integer
+          min: 0
+          max: 1000
+        env_vars:
+          type: integer
+          min: 0
+          max: 1000
+        config_file:
+          type: integer
+          min: 0
+          max: 1000
+        defaults:
+          type: integer
+          min: 0
+          max: 1000

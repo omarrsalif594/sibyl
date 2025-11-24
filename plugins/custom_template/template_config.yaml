@@ -1,0 +1,199 @@
+# Custom Plugin Template Configuration
+# Map frontend events to Sibyl pipelines
+#
+# This template demonstrates how to configure event-to-pipeline mappings
+# for custom frontend integrations.
+#
+# Each event definition includes:
+# - workspace: Path to the workspace configuration
+# - pipeline: Name of the pipeline to execute
+# - description: Human-readable description (optional)
+# - guardrails: Safety checks and validation rules (optional)
+
+events:
+  # ============================================================================
+  # Analytics Events (Northwind Analytics)
+  # ============================================================================
+
+  user_query_analytics:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "revenue_analysis"
+    description: "User asks a business question about analytics/revenue"
+    guardrails:
+      # Example guardrails for this event type
+      max_query_length: 500
+      allowed_time_periods: ["2024-Q1", "2024-Q2", "2024-Q3", "2024-Q4"]
+      rate_limit_per_minute: 10
+
+  dashboard_explain_request:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "explain_dashboard"
+    description: "User requests explanation of a dashboard"
+    guardrails:
+      max_dashboard_name_length: 100
+      rate_limit_per_minute: 5
+
+  release_notes_generation:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "generate_release_notes"
+    description: "Generate release notes for a version"
+    guardrails:
+      require_version_format: true  # Must match vX.Y.Z
+      max_features: 20
+      rate_limit_per_hour: 10
+
+  customer_health_check:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "customer_health_summary"
+    description: "Check customer health scores"
+    guardrails:
+      allowed_segments: ["Enterprise", "Professional", "Starter"]
+      rate_limit_per_minute: 5
+
+  # ============================================================================
+  # ML Platform Events (Vertex Foundry)
+  # ============================================================================
+
+  user_query_ml:
+    workspace: "examples/companies/vertex_foundry/config/workspace.yaml"
+    pipeline: "hyperparameter_sweep"
+    description: "User requests ML hyperparameter optimization"
+    guardrails:
+      max_budget_usd: 1000
+      require_param_space: true
+      rate_limit_per_hour: 5
+
+  # ============================================================================
+  # Generic Events (can be mapped to any workspace)
+  # ============================================================================
+
+  generic_query:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "revenue_analysis"
+    description: "Fallback for generic queries"
+    guardrails:
+      max_query_length: 1000
+      rate_limit_per_minute: 20
+
+# ============================================================================
+# Global Configuration
+# ============================================================================
+
+config:
+  # Default timeout for event handling (seconds)
+  default_timeout: 300
+
+  # Enable async event handling
+  enable_async: false
+
+  # Include execution metadata in responses
+  include_metadata: true
+
+  # Error handling
+  error_handling:
+    include_stack_trace: false
+    return_partial_results: true
+    log_errors: true
+
+  # Logging
+  logging:
+    level: INFO
+    log_events: true
+    log_payloads: true
+    log_responses: true
+
+  # Security
+  security:
+    validate_payloads: true
+    sanitize_inputs: true
+    check_rate_limits: true
+
+  # Performance
+  performance:
+    enable_caching: true
+    cache_workspaces: true
+    max_concurrent_events: 10
+
+# ============================================================================
+# Guardrails Configuration
+# ============================================================================
+
+guardrails:
+  # Global rate limiting
+  global_rate_limits:
+    requests_per_minute: 100
+    requests_per_hour: 1000
+    requests_per_day: 10000
+
+  # Input validation
+  input_validation:
+    max_payload_size_kb: 1024
+    allowed_characters: "alphanumeric_and_punctuation"
+    forbidden_patterns:
+      - "(?i)(drop|delete|truncate)\\s+(table|database)"
+      - "(?i)exec\\s*\\("
+      - "<script"
+
+  # Output filtering
+  output_filtering:
+    max_response_size_kb: 10240
+    sanitize_html: true
+    remove_sensitive_data: true
+
+  # Resource limits
+  resource_limits:
+    max_execution_time_s: 600
+    max_memory_mb: 2048
+    max_pipeline_steps: 50
+
+# ============================================================================
+# Event Routing Rules (Optional)
+# ============================================================================
+
+routing:
+  # Route events based on patterns
+  patterns:
+    # Analytics questions
+    - pattern: "(?i)(revenue|sales|profit|growth)"
+      event_type: "user_query_analytics"
+      priority: high
+
+    # Dashboard questions
+    - pattern: "(?i)(dashboard|chart|graph|visualization)"
+      event_type: "dashboard_explain_request"
+      priority: medium
+
+    # ML/experiment questions
+    - pattern: "(?i)(model|training|hyperparameter|experiment)"
+      event_type: "user_query_ml"
+      priority: high
+
+  # Default event type for unmatched patterns
+  default_event_type: "generic_query"
+
+# ============================================================================
+# Metadata
+# ============================================================================
+
+metadata:
+  version: "1.0.0"
+  created_at: "2024-11-22"
+  description: "Custom plugin template configuration"
+  author: "Sibyl Framework"
+
+# ============================================================================
+# Extension Points
+# ============================================================================
+
+extensions:
+  # Custom event handlers (Python module paths)
+  handlers: []
+
+  # Middleware (executed before/after event handling)
+  middleware: []
+
+  # Custom validators
+  validators: []
+
+  # Monitoring hooks
+  monitoring: []

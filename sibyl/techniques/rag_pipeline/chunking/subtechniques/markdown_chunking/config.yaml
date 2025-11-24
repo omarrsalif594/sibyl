@@ -1,0 +1,4 @@
+subtechnique: markdown_chunking
+description: "Markdown-aware chunking"
+default_implementation: chunker_text
+enabled: true

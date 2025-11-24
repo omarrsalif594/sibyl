@@ -1,0 +1,12 @@
+name: orchestration_strategies
+description: |
+  Orchestration strategy algorithms for context merging, consensus, and error reporting.
+  Extracted from orchestration/wave_orchestrator.py and orchestration/experts.py.
+
+subtechniques:
+  - context_merge
+  - consensus_aggregation
+  - error_reporting
+
+default_subtechnique: context_merge
+default_implementation: default

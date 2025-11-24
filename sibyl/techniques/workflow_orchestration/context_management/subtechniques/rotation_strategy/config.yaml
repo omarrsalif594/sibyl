@@ -1,0 +1,4 @@
+subtechnique: rotation_strategy
+description: "Context rotation strategies"
+default_implementation: threshold_based
+enabled: true

@@ -1,0 +1,93 @@
+# Hero Pipeline 2: Parallel Multi-MCP Analysis (C1.2)
+# Demonstrates parallel execution of multiple MCP analyzers
+
+name: parallel-analysis-pipeline
+description: "Fan-out/fan-in pipeline running multiple MCP analyzers in parallel"
+version: "1.0"
+
+providers:
+  mcp:
+    networkx_analyzer:
+      transport: http
+      url: "http://localhost:8001"
+      tools: ["analyze_graph", "compute_metrics"]
+      timeout_s: 30
+
+    graphiti_analyzer:
+      transport: http
+      url: "http://localhost:8002"
+      tools: ["query_graph", "traverse"]
+      timeout_s: 30
+
+    ast_analyzer:
+      transport: stdio
+      command: ["python", "-m", "ast_mcp_server"]
+      tools: ["scan_patterns", "find_dependencies"]
+      timeout_s: 30
+
+shops:
+  rag:
+    techniques:
+      aggregate: "rag_pipeline.aggregation:multimodal"
+
+pipelines:
+  multi_analyzer:
+    shop: rag
+    entrypoint: "analysis.run"
+    description: "Run multiple analyzers in parallel and aggregate results"
+    timeout_s: 60
+    steps:
+      # Parallel fan-out: Run all analyzers concurrently
+      - parallel:
+          gather: "analysis_results"
+          fail_fast: false  # Continue even if one analyzer fails
+          timeout_s: 45
+          steps:
+            - name: "networkx"
+              shop: mcp
+              provider: networkx_analyzer
+              tool: analyze_graph
+              params:
+                graph_data: "{{ input.graph }}"
+                metrics: ["centrality", "clustering", "diameter"]
+
+            - name: "graphiti"
+              shop: mcp
+              provider: graphiti_analyzer
+              tool: query_graph
+              params:
+                query: "{{ input.query }}"
+                max_depth: 3
+
+            - name: "ast"
+              shop: mcp
+              provider: ast_analyzer
+              tool: scan_patterns
+              params:
+                patterns: "{{ input.patterns }}"
+                recursive: true
+
+      # Aggregate parallel results
+      - use: rag.aggregate
+        config:
+          sources: "{{ context.analysis_results }}"
+          strategy: "weighted_merge"
+
+mcp:
+  tools:
+    - name: "multi_analyzer"
+      description: "Run multiple graph analyzers in parallel"
+      pipeline: "multi_analyzer"
+      input_schema:
+        type: "object"
+        properties:
+          graph:
+            type: "object"
+            description: "Graph data structure"
+          query:
+            type: "string"
+            description: "Query string"
+          patterns:
+            type: "array"
+            description: "Patterns to scan for"
+        required: ["graph"]

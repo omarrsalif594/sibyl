@@ -1,0 +1,4 @@
+subtechnique: summarization
+description: "Session summarization techniques"
+default_implementation: extractive
+enabled: true

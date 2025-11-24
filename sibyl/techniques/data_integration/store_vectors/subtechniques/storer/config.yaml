@@ -1,0 +1,4 @@
+subtechnique: storer
+description: "Storer"
+default_implementation: default
+enabled: true

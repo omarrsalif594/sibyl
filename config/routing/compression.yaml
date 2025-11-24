@@ -1,0 +1,135 @@
+# ====================================================================================
+# COMPRESSION WALL CONFIGURATION
+# ====================================================================================
+# This file configures the compression wall pattern for routing.
+# Compression is applied BEFORE routing to reduce prompt size while preserving intent.
+#
+# Configuration is per routing profile:
+# - "default": No compression (disabled by default)
+# - "think": Deep reasoning tasks (use full compression chain)
+# - "code_fast": Quick code tasks (lightweight compression)
+# - "analyze": Analysis tasks (multi-pass summarization)
+# ====================================================================================
+
+profiles:
+  # Default profile - compression disabled
+  default:
+    enabled: false
+    description: "Default routing profile with no compression"
+
+  # Think profile - full compression chain for long reasoning tasks
+  think:
+    enabled: true
+    description: "Deep reasoning profile with full compression chain"
+    chain:
+      - name: "global_intent_extractor"
+        params:
+          extract_constraints: true
+          extract_examples: false
+          max_intent_length: 300
+
+      - name: "multi_pass_summary"
+        params:
+          num_passes: 2
+          target_compression_ratio: 0.3
+          max_summary_length: 500
+
+  # Code fast profile - lightweight compression for quick tasks
+  code_fast:
+    enabled: true
+    description: "Fast code tasks with lightweight compression"
+    chain:
+      - name: "global_intent_extractor"
+        params:
+          extract_constraints: true
+          extract_examples: true
+          max_intent_length: 400
+
+  # Analyze profile - multi-pass for complex analysis
+  analyze:
+    enabled: true
+    description: "Analysis tasks with multi-pass summarization"
+    chain:
+      - name: "algorithmic_compressor"
+        params:
+          normalize_whitespace: true
+          remove_duplicates: true
+          deduplicate_phrases: true
+          min_compression_ratio: 0.8
+
+      - name: "multi_pass_summary"
+        params:
+          num_passes: 3
+          target_compression_ratio: 0.25
+          max_summary_length: 600
+
+  # Summary profile - LLM-based summarization
+  summary:
+    enabled: true
+    description: "LLM-based summarization for general tasks"
+    chain:
+      - name: "llm_summarizer"
+        params:
+          target_compression_ratio: 0.4
+          max_summary_tokens: 400
+          timeout_seconds: 8.0
+          temperature: 0.3
+
+  # Minimal profile - algorithmic only (no LLM)
+  minimal:
+    enabled: true
+    description: "Minimal algorithmic compression without LLM"
+    chain:
+      - name: "algorithmic_compressor"
+        params:
+          normalize_whitespace: true
+          remove_duplicates: true
+          deduplicate_phrases: true
+          min_compression_ratio: 0.7
+
+# ====================================================================================
+# GLOBAL COMPRESSION SETTINGS
+# ====================================================================================
+global:
+  # Minimum input size to trigger compression (characters)
+  min_input_size: 1000
+
+  # Maximum compression time before fallback (seconds)
+  max_compression_time: 15.0
+
+  # Enable compression metrics logging
+  log_metrics: true
+
+  # Enable compression result caching
+  enable_caching: true
+  cache_max_entries: 100
+
+  # Token counting
+  token_estimation_method: "char_based"  # "char_based" or "tiktoken"
+
+# ====================================================================================
+# COMPRESSOR DEFAULTS
+# ====================================================================================
+# Default parameters for each compressor type
+defaults:
+  global_intent_extractor:
+    extract_constraints: true
+    extract_examples: false
+    max_intent_length: 300
+
+  multi_pass_summary:
+    num_passes: 2
+    target_compression_ratio: 0.3
+    max_summary_length: 500
+
+  llm_summarizer:
+    target_compression_ratio: 0.4
+    max_summary_tokens: 400
+    timeout_seconds: 10.0
+    temperature: 0.3
+
+  algorithmic_compressor:
+    normalize_whitespace: true
+    remove_duplicates: true
+    deduplicate_phrases: true
+    min_compression_ratio: 0.7

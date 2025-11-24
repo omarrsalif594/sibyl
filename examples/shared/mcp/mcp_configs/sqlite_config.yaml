@@ -1,0 +1,33 @@
+# SQLite MCP Configuration
+# Usage: Include this snippet in your workspace.yaml
+
+mcps:
+  sqlite:
+    enabled: true
+
+    # Database files
+    databases:
+      - path: ./data/transactions.db
+        alias: transactions
+        readonly: true
+
+      - path: ./data/analytics.db
+        alias: analytics
+        readonly: false
+
+    # Query limits
+    max_rows: 10000
+    timeout_seconds: 30
+
+    # Performance
+    cache_size: 2000  # Pages
+    journal_mode: WAL  # Write-Ahead Logging
+
+# Example usage in pipeline:
+# techniques:
+#   - name: query_transactions
+#     type: data_integration/query_sql
+#     config:
+#       mcp_name: sqlite
+#       database: transactions
+#       query: "SELECT * FROM transactions WHERE amount > 10000 LIMIT 100"

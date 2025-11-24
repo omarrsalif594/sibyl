@@ -1,0 +1,201 @@
+# Production Web Research Workspace
+# This is the flagship workspace for Sibyl - the reference implementation
+# Provides web research and URL summarization capabilities
+
+name: "prod-web-research"
+description: "Production-ready web research workspace with RAG and AI generation"
+version: "1.0"
+
+# Global budget limits (applies to all pipelines)
+budget:
+  max_cost_usd: 5.0
+  max_tokens: 100000
+  max_requests: 50
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    fast:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.5
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store configurations
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/web_research.duckdb"
+      collection_name: "web_documents"
+      distance_metric: "cosine"
+
+  # External MCP providers (optional - enable if available)
+  mcp:
+    browser:
+      type: "http_mcp"
+      endpoint: "http://localhost:9002"
+      tools:
+        - "browser.search"
+        - "browser.navigate"
+        - "browser.extract"
+      timeout_s: 30
+
+    filesystem:
+      type: "stdio_mcp"
+      endpoint: "mcp-server-filesystem"
+      tools:
+        - "read_file"
+        - "write_file"
+      timeout_s: 15
+
+# Shop configurations
+shops:
+  # Web research shop - combines RAG and AI generation
+  web_research_shop:
+    techniques:
+      # RAG techniques
+      chunker: "rag_pipeline.chunking:semantic"
+      embedder: "rag_pipeline.embedding:openai"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      augmenter: "rag_pipeline.augmentation:context"
+
+      # AI generation techniques
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+
+      # Query processing
+      query_processor: "rag_pipeline.query_processing:standard"
+
+    config:
+      chunk_size: 1024
+      chunk_overlap: 128
+      top_k: 10
+      quality_threshold: 0.75
+
+# Pipeline configurations
+pipelines:
+  # Primary pipeline: Full web research flow
+  web_research:
+    shop: "web_research_shop"
+    entrypoint: "research.run"
+    description: "Comprehensive web research: query -> retrieve documents -> augment with context -> generate response"
+    timeout_s: 300
+    budget:
+      max_cost_usd: 2.0
+      max_tokens: 50000
+      max_requests: 20
+    steps:
+      - use: "web_research_shop.query_processor"
+        config:
+          expand_query: true
+          extract_keywords: true
+
+      - use: "web_research_shop.retriever"
+        config:
+          top_k: 15
+          min_score: 0.5
+
+      - use: "web_research_shop.augmenter"
+        config:
+          include_metadata: true
+          max_context_tokens: 3000
+
+      - use: "web_research_shop.generator"
+        config:
+          llm_provider: "default"
+          prompt_template: "research_summary"
+          include_citations: true
+
+      - use: "web_research_shop.validator"
+        config:
+          min_quality: 0.75
+          check_citations: true
+
+  # Secondary pipeline: Simple URL summarization
+  summarize_url:
+    shop: "web_research_shop"
+    entrypoint: "summarize.run"
+    description: "Fetch URL content and generate a concise summary"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 0.50
+      max_tokens: 10000
+      max_requests: 5
+    steps:
+      - use: "web_research_shop.chunker"
+        config:
+          chunk_size: 2048
+          strategy: "sliding_window"
+
+      - use: "web_research_shop.embedder"
+        config:
+          provider: "default"
+
+      - use: "web_research_shop.generator"
+        config:
+          llm_provider: "fast"
+          prompt_template: "url_summary"
+          max_output_tokens: 500
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-web-research"
+  server_version: "1.0.0"
+  tools:
+    - name: "web_research"
+      description: "Conduct comprehensive web research on a query. Retrieves documents, augments with context, and generates a detailed response with citations."
+      pipeline: "web_research"
+      input_schema:
+        type: "object"
+        properties:
+          query:
+            type: "string"
+            description: "The research query or question"
+          top_k:
+            type: "integer"
+            description: "Number of documents to retrieve (default: 10)"
+            default: 10
+            minimum: 1
+            maximum: 50
+          include_citations:
+            type: "boolean"
+            description: "Include source citations in response (default: true)"
+            default: true
+        required:
+          - "query"
+
+    - name: "summarize_url"
+      description: "Fetch content from a URL and generate a concise summary. Fast and efficient for quick content analysis."
+      pipeline: "summarize_url"
+      input_schema:
+        type: "object"
+        properties:
+          url:
+            type: "string"
+            description: "The URL to fetch and summarize"
+            format: "uri"
+          max_length:
+            type: "integer"
+            description: "Maximum summary length in tokens (default: 500)"
+            default: 500
+            minimum: 100
+            maximum: 2000
+        required:
+          - "url"

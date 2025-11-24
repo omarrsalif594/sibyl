@@ -1,0 +1,4 @@
+subtechnique: coherence
+description: "Coherence evaluation"
+default_implementation: flow_check
+enabled: true

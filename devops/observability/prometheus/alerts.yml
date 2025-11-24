@@ -1,0 +1,90 @@
+# =============================================================================
+# Prometheus Alert Rules for Sibyl MCP Server
+# =============================================================================
+
+groups:
+  - name: sibyl_alerts
+    interval: 30s
+    rules:
+      # Service is down
+      - alert: SibylServiceDown
+        expr: up{job=~"sibyl.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sibyl service is down (instance {{ $labels.instance }})"
+          description: "Sibyl service {{ $labels.job }} has been down for more than 1 minute."
+
+      # High memory usage
+      - alert: SibylHighMemoryUsage
+        expr: (process_resident_memory_bytes{job=~"sibyl.*"} / 1024 / 1024 / 1024) > 6
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sibyl high memory usage (instance {{ $labels.instance }})"
+          description: "Sibyl is using {{ $value }}GB of memory (threshold: 6GB)."
+
+      # High CPU usage
+      - alert: SibylHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job=~"sibyl.*"}[5m]) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sibyl high CPU usage (instance {{ $labels.instance }})"
+          description: "Sibyl CPU usage is at {{ $value }}% for more than 10 minutes."
+
+      # DuckDB connection issues
+      - alert: SibylDuckDBErrors
+        expr: increase(sibyl_duckdb_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sibyl DuckDB errors detected"
+          description: "{{ $value }} DuckDB errors detected in the last 5 minutes."
+
+      # High error rate
+      - alert: SibylHighErrorRate
+        expr: rate(sibyl_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sibyl high error rate"
+          description: "Error rate is {{ $value }} errors/second."
+
+      # API rate limit approaching
+      - alert: SibylAPIRateLimitApproaching
+        expr: (sibyl_api_requests_total / sibyl_api_rate_limit) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sibyl API rate limit approaching"
+          description: "API usage is at {{ $value }}% of rate limit."
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # Prometheus is down
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus monitoring is not available."
+
+      # High disk usage on volumes
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage on {{ $labels.mountpoint }}"
+          description: "Disk usage is above 90% ({{ $value }}% free)."

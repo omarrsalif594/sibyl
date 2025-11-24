@@ -1,0 +1,4 @@
+subtechnique: pii_redaction
+description: "PII redaction strategies"
+default_implementation: regex_redaction
+enabled: true

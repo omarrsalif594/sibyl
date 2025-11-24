@@ -1,0 +1,4 @@
+subtechnique: prompt_injection_detection
+description: "Prompt injection detection"
+default_implementation: pattern_based
+enabled: true

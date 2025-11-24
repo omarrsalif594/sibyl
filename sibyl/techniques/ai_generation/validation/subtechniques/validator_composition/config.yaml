@@ -1,0 +1,4 @@
+subtechnique: validator_composition
+description: "Validator composition patterns"
+default_implementation: composite
+enabled: true

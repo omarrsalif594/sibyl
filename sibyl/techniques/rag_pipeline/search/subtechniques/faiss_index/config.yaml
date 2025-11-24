@@ -1,0 +1,4 @@
+subtechnique: faiss_index
+description: "FAISS index search"
+default_implementation: ann_search
+enabled: true

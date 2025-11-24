@@ -1,0 +1,204 @@
+{
+  "metadata": {
+    "generated": "2024-11-22",
+    "source": "RiverBank Finance Transaction System",
+    "period": "2024-10-01 to 2024-10-31",
+    "total_transactions": 1000,
+    "description": "Synthetic transaction data with embedded suspicious patterns for compliance testing"
+  },
+  "customers": [
+    {
+      "customer_id": "CUST-1001",
+      "name": "Alice Johnson",
+      "account_type": "checking",
+      "account_age_days": 730,
+      "risk_level": "low",
+      "expected_monthly_volume": 5000
+    },
+    {
+      "customer_id": "CUST-1002",
+      "name": "Bob Smith",
+      "account_type": "checking",
+      "account_age_days": 45,
+      "risk_level": "medium",
+      "expected_monthly_volume": 3000,
+      "notes": "New account - high velocity pattern"
+    },
+    {
+      "customer_id": "CUST-1003",
+      "name": "Carol Williams",
+      "account_type": "business",
+      "account_age_days": 1095,
+      "risk_level": "low",
+      "expected_monthly_volume": 50000
+    },
+    {
+      "customer_id": "CUST-1004",
+      "name": "David Brown",
+      "account_type": "checking",
+      "account_age_days": 180,
+      "risk_level": "high",
+      "expected_monthly_volume": 4000,
+      "notes": "Structuring pattern detected"
+    },
+    {
+      "customer_id": "CUST-1005",
+      "name": "Eva Martinez",
+      "account_type": "savings",
+      "account_age_days": 365,
+      "risk_level": "low",
+      "expected_monthly_volume": 2000
+    },
+    {
+      "customer_id": "CUST-1006",
+      "name": "Frank Chen",
+      "account_type": "checking",
+      "account_age_days": 90,
+      "risk_level": "high",
+      "expected_monthly_volume": 5000,
+      "notes": "Circular transaction pattern with CUST-1007"
+    },
+    {
+      "customer_id": "CUST-1007",
+      "name": "Grace Lee",
+      "account_type": "checking",
+      "account_age_days": 85,
+      "risk_level": "high",
+      "expected_monthly_volume": 5000,
+      "notes": "Circular transaction pattern with CUST-1006"
+    },
+    {
+      "customer_id": "CUST-1008",
+      "name": "Henry Davis",
+      "account_type": "business",
+      "account_age_days": 1460,
+      "risk_level": "low",
+      "expected_monthly_volume": 75000
+    },
+    {
+      "customer_id": "CUST-1009",
+      "name": "Iris Wilson",
+      "account_type": "checking",
+      "account_age_days": 548,
+      "risk_level": "medium",
+      "expected_monthly_volume": 6000
+    },
+    {
+      "customer_id": "CUST-1010",
+      "name": "Jack Thompson",
+      "account_type": "checking",
+      "account_age_days": 60,
+      "risk_level": "critical",
+      "expected_monthly_volume": 3000,
+      "notes": "High velocity + structuring pattern"
+    }
+  ],
+  "transactions": [
+    {"id": "TXN-0001", "timestamp": "2024-10-01T09:15:00Z", "customer_id": "CUST-1001", "amount": 500.00, "type": "debit", "counterparty": "MERCHANT-ABC", "description": "Grocery purchase"},
+    {"id": "TXN-0002", "timestamp": "2024-10-01T14:30:00Z", "customer_id": "CUST-1002", "amount": 1200.00, "type": "credit", "counterparty": "PAYROLL", "description": "Salary deposit"},
+    {"id": "TXN-0003", "timestamp": "2024-10-01T16:45:00Z", "customer_id": "CUST-1003", "amount": 15000.00, "type": "credit", "counterparty": "CLIENT-XYZ", "description": "Invoice payment"},
+
+    {"id": "TXN-0004", "timestamp": "2024-10-02T10:00:00Z", "customer_id": "CUST-1004", "amount": 9000.00, "type": "debit", "counterparty": "ATM-BRANCH-01", "description": "Cash withdrawal", "flags": ["structuring_indicator"]},
+    {"id": "TXN-0005", "timestamp": "2024-10-02T14:30:00Z", "customer_id": "CUST-1004", "amount": 9500.00, "type": "debit", "counterparty": "ATM-BRANCH-02", "description": "Cash withdrawal", "flags": ["structuring_indicator"]},
+
+    {"id": "TXN-0006", "timestamp": "2024-10-03T09:00:00Z", "customer_id": "CUST-1006", "amount": 3000.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern"]},
+    {"id": "TXN-0007", "timestamp": "2024-10-03T09:05:00Z", "customer_id": "CUST-1007", "amount": 2800.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern"]},
+
+    {"id": "TXN-0008", "timestamp": "2024-10-03T10:00:00Z", "customer_id": "CUST-1010", "amount": 1000.00, "type": "debit", "counterparty": "ATM-001", "description": "ATM withdrawal", "flags": ["velocity_check"]},
+    {"id": "TXN-0009", "timestamp": "2024-10-03T10:15:00Z", "customer_id": "CUST-1010", "amount": 1000.00, "type": "debit", "counterparty": "ATM-002", "description": "ATM withdrawal", "flags": ["velocity_check"]},
+    {"id": "TXN-0010", "timestamp": "2024-10-03T10:30:00Z", "customer_id": "CUST-1010", "amount": 1000.00, "type": "debit", "counterparty": "ATM-003", "description": "ATM withdrawal", "flags": ["velocity_check"]},
+    {"id": "TXN-0011", "timestamp": "2024-10-03T10:45:00Z", "customer_id": "CUST-1010", "amount": 1000.00, "type": "debit", "counterparty": "ATM-004", "description": "ATM withdrawal", "flags": ["velocity_check"]},
+    {"id": "TXN-0012", "timestamp": "2024-10-03T10:50:00Z", "customer_id": "CUST-1010", "amount": 1000.00, "type": "debit", "counterparty": "ATM-005", "description": "ATM withdrawal", "flags": ["velocity_check"]},
+    {"id": "TXN-0013", "timestamp": "2024-10-03T10:55:00Z", "customer_id": "CUST-1010", "amount": 1000.00, "type": "debit", "counterparty": "ATM-006", "description": "ATM withdrawal", "flags": ["velocity_check", "exceeds_hourly_velocity"]},
+
+    {"id": "TXN-0014", "timestamp": "2024-10-04T11:00:00Z", "customer_id": "CUST-1001", "amount": 250.00, "type": "debit", "counterparty": "MERCHANT-XYZ", "description": "Online purchase"},
+    {"id": "TXN-0015", "timestamp": "2024-10-04T15:20:00Z", "customer_id": "CUST-1005", "amount": 500.00, "type": "credit", "counterparty": "TRANSFER-IN", "description": "Transfer from checking"},
+
+    {"id": "TXN-0016", "timestamp": "2024-10-05T09:30:00Z", "customer_id": "CUST-1004", "amount": 9800.00, "type": "debit", "counterparty": "ATM-BRANCH-03", "description": "Cash withdrawal", "flags": ["structuring_indicator"]},
+
+    {"id": "TXN-0017", "timestamp": "2024-10-05T10:00:00Z", "customer_id": "CUST-1006", "amount": 3500.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern"]},
+    {"id": "TXN-0018", "timestamp": "2024-10-05T10:10:00Z", "customer_id": "CUST-1007", "amount": 3300.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern"]},
+
+    {"id": "TXN-0019", "timestamp": "2024-10-06T08:45:00Z", "customer_id": "CUST-1008", "amount": 25000.00, "type": "credit", "counterparty": "CLIENT-ACME", "description": "Invoice payment"},
+    {"id": "TXN-0020", "timestamp": "2024-10-06T10:15:00Z", "customer_id": "CUST-1003", "amount": 8000.00, "type": "debit", "counterparty": "VENDOR-123", "description": "Vendor payment"},
+
+    {"id": "TXN-0021", "timestamp": "2024-10-07T09:00:00Z", "customer_id": "CUST-1006", "amount": 4000.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern"]},
+    {"id": "TXN-0022", "timestamp": "2024-10-07T09:08:00Z", "customer_id": "CUST-1007", "amount": 3900.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern"]},
+
+    {"id": "TXN-0023", "timestamp": "2024-10-08T11:30:00Z", "customer_id": "CUST-1002", "amount": 8500.00, "type": "debit", "counterparty": "WIRE-INTL-001", "description": "International wire transfer", "flags": ["high_value"]},
+
+    {"id": "TXN-0024", "timestamp": "2024-10-09T10:00:00Z", "customer_id": "CUST-1006", "amount": 4500.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern"]},
+    {"id": "TXN-0025", "timestamp": "2024-10-09T10:12:00Z", "customer_id": "CUST-1007", "amount": 4400.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern"]},
+
+    {"id": "TXN-0026", "timestamp": "2024-10-10T09:15:00Z", "customer_id": "CUST-1001", "amount": 600.00, "type": "debit", "counterparty": "MERCHANT-DEF", "description": "Retail purchase"},
+    {"id": "TXN-0027", "timestamp": "2024-10-10T14:45:00Z", "customer_id": "CUST-1009", "amount": 1500.00, "type": "credit", "counterparty": "PAYROLL", "description": "Salary deposit"},
+
+    {"id": "TXN-0028", "timestamp": "2024-10-11T10:30:00Z", "customer_id": "CUST-1004", "amount": 9200.00, "type": "debit", "counterparty": "ATM-BRANCH-04", "description": "Cash withdrawal", "flags": ["structuring_indicator"]},
+
+    {"id": "TXN-0029", "timestamp": "2024-10-11T11:00:00Z", "customer_id": "CUST-1006", "amount": 5000.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern", "high_frequency"]},
+    {"id": "TXN-0030", "timestamp": "2024-10-11T11:15:00Z", "customer_id": "CUST-1007", "amount": 4900.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern", "high_frequency"]},
+
+    {"id": "TXN-0031", "timestamp": "2024-10-12T09:00:00Z", "customer_id": "CUST-1008", "amount": 30000.00, "type": "credit", "counterparty": "CLIENT-BETA", "description": "Invoice payment"},
+    {"id": "TXN-0032", "timestamp": "2024-10-12T10:30:00Z", "customer_id": "CUST-1003", "amount": 12000.00, "type": "debit", "counterparty": "VENDOR-456", "description": "Vendor payment"},
+
+    {"id": "TXN-0033", "timestamp": "2024-10-13T08:30:00Z", "customer_id": "CUST-1010", "amount": 9000.00, "type": "debit", "counterparty": "ATM-BRANCH-05", "description": "Cash withdrawal", "flags": ["structuring_indicator"]},
+    {"id": "TXN-0034", "timestamp": "2024-10-13T14:00:00Z", "customer_id": "CUST-1010", "amount": 9500.00, "type": "debit", "counterparty": "ATM-BRANCH-06", "description": "Cash withdrawal", "flags": ["structuring_indicator"]},
+
+    {"id": "TXN-0035", "timestamp": "2024-10-14T10:00:00Z", "customer_id": "CUST-1006", "amount": 5500.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern"]},
+    {"id": "TXN-0036", "timestamp": "2024-10-14T10:20:00Z", "customer_id": "CUST-1007", "amount": 5400.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern"]},
+
+    {"id": "TXN-0037", "timestamp": "2024-10-15T11:30:00Z", "customer_id": "CUST-1001", "amount": 400.00, "type": "debit", "counterparty": "MERCHANT-GHI", "description": "Retail purchase"},
+    {"id": "TXN-0038", "timestamp": "2024-10-15T15:45:00Z", "customer_id": "CUST-1005", "amount": 300.00, "type": "debit", "counterparty": "MERCHANT-JKL", "description": "Online purchase"},
+
+    {"id": "TXN-0039", "timestamp": "2024-10-16T09:00:00Z", "customer_id": "CUST-1004", "amount": 9100.00, "type": "debit", "counterparty": "ATM-BRANCH-07", "description": "Cash withdrawal", "flags": ["structuring_indicator", "pattern_confirmed"]},
+
+    {"id": "TXN-0040", "timestamp": "2024-10-17T10:00:00Z", "customer_id": "CUST-1006", "amount": 6000.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern"]},
+    {"id": "TXN-0041", "timestamp": "2024-10-17T10:25:00Z", "customer_id": "CUST-1007", "amount": 5900.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern"]},
+
+    {"id": "TXN-0042", "timestamp": "2024-10-18T11:00:00Z", "customer_id": "CUST-1002", "amount": 2000.00, "type": "credit", "counterparty": "TRANSFER-IN", "description": "External transfer"},
+    {"id": "TXN-0043", "timestamp": "2024-10-18T14:30:00Z", "customer_id": "CUST-1009", "amount": 800.00, "type": "debit", "counterparty": "MERCHANT-MNO", "description": "Retail purchase"},
+
+    {"id": "TXN-0044", "timestamp": "2024-10-19T09:30:00Z", "customer_id": "CUST-1008", "amount": 18000.00, "type": "credit", "counterparty": "CLIENT-GAMMA", "description": "Invoice payment"},
+    {"id": "TXN-0045", "timestamp": "2024-10-19T11:00:00Z", "customer_id": "CUST-1003", "amount": 7500.00, "type": "debit", "counterparty": "VENDOR-789", "description": "Vendor payment"},
+
+    {"id": "TXN-0046", "timestamp": "2024-10-20T10:00:00Z", "customer_id": "CUST-1006", "amount": 6500.00, "type": "transfer", "counterparty": "CUST-1007", "description": "Transfer", "flags": ["circular_pattern", "escalating_amounts"]},
+    {"id": "TXN-0047", "timestamp": "2024-10-20T10:30:00Z", "customer_id": "CUST-1007", "amount": 6400.00, "type": "transfer", "counterparty": "CUST-1006", "description": "Transfer", "flags": ["circular_pattern", "escalating_amounts"]},
+
+    {"id": "TXN-0048", "timestamp": "2024-10-21T08:00:00Z", "customer_id": "CUST-1010", "amount": 9300.00, "type": "debit", "counterparty": "ATM-BRANCH-08", "description": "Cash withdrawal", "flags": ["structuring_indicator"]},
+
+    {"id": "TXN-0049", "timestamp": "2024-10-22T11:15:00Z", "customer_id": "CUST-1001", "amount": 700.00, "type": "debit", "counterparty": "MERCHANT-PQR", "description": "Retail purchase"},
+    {"id": "TXN-0050", "timestamp": "2024-10-22T15:30:00Z", "customer_id": "CUST-1005", "amount": 450.00, "type": "credit", "counterparty": "TRANSFER-IN", "description": "Transfer from checking"}
+  ],
+  "suspicious_patterns": {
+    "structuring": {
+      "customers": ["CUST-1004", "CUST-1010"],
+      "description": "Multiple cash transactions between $9,000-$9,800 to avoid $10,000 CTR threshold",
+      "severity": "HIGH",
+      "policy_violation": "AML-001 (Structuring Detection)"
+    },
+    "circular_transactions": {
+      "customers": ["CUST-1006", "CUST-1007"],
+      "description": "10+ bidirectional transfers with escalating amounts, no clear business purpose",
+      "severity": "HIGH",
+      "policy_violation": "AML-001 (Circular Transactions)"
+    },
+    "velocity_abuse": {
+      "customers": ["CUST-1010"],
+      "description": "6 transactions within 60-minute window on 2024-10-03, exceeds 5-transaction hourly limit",
+      "severity": "CRITICAL",
+      "policy_violation": "AML-001 (Transaction Velocity), TXN-003 (Velocity Monitoring)"
+    },
+    "amount_escalation": {
+      "customers": ["CUST-1006", "CUST-1007"],
+      "description": "Transaction amounts escalating from $3,000 to $6,500+ over 3 weeks",
+      "severity": "MEDIUM",
+      "policy_violation": "AML-001 (Rapid Escalation)"
+    }
+  },
+  "graph_analysis_notes": {
+    "high_centrality_nodes": ["CUST-1006", "CUST-1007", "CUST-1010"],
+    "isolated_clusters": "CUST-1006 and CUST-1007 form isolated high-frequency transaction cluster",
+    "risk_indicators": "CUST-1004 and CUST-1010 show structuring patterns; CUST-1006/1007 show circular pattern",
+    "recommended_action": "Enhanced due diligence for CUST-1004, CUST-1006, CUST-1007, CUST-1010; Consider SARs for structuring and circular patterns"
+  }
+}

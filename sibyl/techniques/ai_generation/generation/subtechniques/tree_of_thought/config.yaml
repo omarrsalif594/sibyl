@@ -1,0 +1,4 @@
+subtechnique: tree_of_thought
+description: "Tree of thought exploration"
+default_implementation: tot_exploration
+enabled: true

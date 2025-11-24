@@ -1,0 +1,11 @@
+implementation: penalty_based
+description: |
+  Quality scoring using penalty-based approach.
+  Original logic from agents/reviewer.py:193,199-203
+
+parameters:
+  failure_penalty: -20
+  critical_penalty: -15
+  high_penalty: -10
+  medium_penalty: -5
+  low_penalty: 0

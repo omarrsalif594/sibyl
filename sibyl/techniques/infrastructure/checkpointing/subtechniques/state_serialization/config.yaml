@@ -1,0 +1,4 @@
+subtechnique: state_serialization
+description: "State serialization formats"
+default_implementation: json
+enabled: true

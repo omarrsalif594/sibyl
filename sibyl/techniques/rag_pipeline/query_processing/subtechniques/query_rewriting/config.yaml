@@ -1,0 +1,4 @@
+subtechnique: query_rewriting
+description: "Query rewriting strategies"
+default_implementation: template
+enabled: true

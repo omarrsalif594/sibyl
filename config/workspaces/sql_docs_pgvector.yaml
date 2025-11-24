@@ -1,0 +1,249 @@
+name: sql-docs-pgvector
+version: "1.0"
+description: "Document ingestion with SQL metadata and pgvector storage - demonstrates cross-provider integration"
+
+# Provider configurations
+providers:
+  # SQL source for document metadata and structured data
+  sql:
+    doc_metadata:
+      type: sqlite
+      config:
+        path: ./data/doc_metadata.db
+
+    analytics:
+      type: sqlite
+      config:
+        path: ./data/analytics.db
+
+  # Document sources
+  document_sources:
+    docs_local:
+      type: filesystem_markdown
+      config:
+        root: ./docs
+        pattern: "**/*.md"
+
+  # Vector store: PostgreSQL with pgvector extension
+  vector_store:
+    docs_vectors:
+      kind: pgvector
+      dsn: "postgresql://localhost:5432/sibyl"
+      collection_name: doc_embeddings
+      distance_metric: cosine
+      dimension: 384
+
+    # Fallback to DuckDB if PostgreSQL not available
+    docs_vectors_fallback:
+      kind: duckdb
+      dsn: "duckdb://./data/sql_docs_vectors.duckdb"
+      collection_name: doc_embeddings
+      distance_metric: cosine
+      dimension: 384
+
+  # Embeddings provider
+  embeddings:
+    default:
+      provider: local_sentence_transformer
+      model: all-MiniLM-L6-v2
+      dimension: 384
+
+  # LLM for synthesis
+  llm:
+    default:
+      provider: openai
+      model: gpt-4
+      api_key_env: OPENAI_API_KEY
+      max_tokens: 2048
+
+    local:
+      provider: local
+      model: echo
+
+# Shop configurations
+shops:
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      embedder: "rag_pipeline.embedding:sentence_transformer"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+      top_k: 5
+
+  # Data integration shop for cross-provider operations
+  data:
+    techniques:
+      sql_loader: "data_integration.sql:query_loader"
+      doc_loader: "data_integration.documents:load_documents"
+      vector_writer: "data_integration.vectors:store_vectors"
+    config:
+      batch_size: 100
+
+# Pipeline configurations
+pipelines:
+  # Pipeline 1: Index documents from filesystem with SQL metadata tracking
+  index_from_filesystem:
+    shop: rag
+    description: "Load documents from filesystem, embed, store in pgvector with SQL metadata"
+    timeout_s: 300
+    steps:
+      # Load and chunk documents
+      - use: rag.chunker
+        config:
+          source: docs_local
+          chunk_size: 512
+
+      # Generate embeddings
+      - use: rag.embedder
+        config:
+          batch_size: 32
+
+      # Store in vector database
+      - use: data.vector_writer
+        config:
+          vector_store: docs_vectors
+
+      # Track metadata in SQL (optional)
+      # This would store document metadata, indexing time, chunk counts, etc.
+      # Implementation would use SQLDataProvider to insert records
+
+  # Pipeline 2: Index from SQL source
+  index_from_sql:
+    shop: data
+    description: "Load documents from SQL database, embed, store in pgvector"
+    timeout_s: 300
+    steps:
+      # Query SQL database for document content
+      - use: data.sql_loader
+        config:
+          provider: doc_metadata
+          query: "SELECT id, title, content, metadata FROM documents WHERE indexed = 0"
+
+      # Chunk the loaded documents
+      - use: rag.chunker
+        config:
+          chunk_size: 512
+
+      # Generate embeddings
+      - use: rag.embedder
+
+      # Store vectors
+      - use: data.vector_writer
+        config:
+          vector_store: docs_vectors
+
+      # Update SQL to mark as indexed
+      # Additional step would execute:
+      # UPDATE documents SET indexed = 1, indexed_at = NOW() WHERE id IN (...)
+
+  # Pipeline 3: Hybrid retrieval with SQL filtering
+  hybrid_search:
+    shop: rag
+    description: "Search with vector similarity + SQL metadata filters"
+    timeout_s: 60
+    steps:
+      # First, query SQL for candidate documents based on metadata
+      - use: data.sql_loader
+        config:
+          provider: doc_metadata
+          query: "SELECT doc_id FROM documents WHERE category = ? AND date > ?"
+
+      # Then, retrieve from vector store with SQL-filtered IDs
+      - use: rag.retriever
+        config:
+          vector_store: docs_vectors
+          top_k: 10
+          # Filter by doc_ids from SQL query
+
+      # Synthesize answer
+      - use: rag.synthesizer
+        config:
+          llm_provider: default
+
+  # Pipeline 4: Cross-database analytics
+  document_analytics:
+    shop: data
+    description: "Analyze document corpus using SQL + vector stats"
+    timeout_s: 120
+    steps:
+      # Get vector store statistics
+      - use: data.vector_writer
+        config:
+          operation: get_stats
+          vector_store: docs_vectors
+
+      # Query SQL for document statistics
+      - use: data.sql_loader
+        config:
+          provider: analytics
+          query: |
+            SELECT
+              category,
+              COUNT(*) as doc_count,
+              AVG(LENGTH(content)) as avg_length
+            FROM documents
+            GROUP BY category
+
+      # Combine and report statistics
+
+  # Pipeline 5: Incremental update
+  incremental_index:
+    shop: data
+    description: "Index only new or modified documents"
+    timeout_s: 300
+    steps:
+      # Query SQL for documents modified since last index
+      - use: data.sql_loader
+        config:
+          provider: doc_metadata
+          query: |
+            SELECT id, content, metadata
+            FROM documents
+            WHERE updated_at > (SELECT MAX(indexed_at) FROM index_log)
+
+      # Process and index new documents
+      - use: rag.chunker
+      - use: rag.embedder
+      - use: data.vector_writer
+        config:
+          vector_store: docs_vectors
+          mode: upsert  # Update existing or insert new
+
+# Budget configuration
+budget:
+  max_cost_usd: 2.0
+  max_tokens: 200000
+  max_requests: 100
+
+# MCP tool exposure
+mcp:
+  server_name: "sibyl-sql-pgvector"
+  server_version: "1.0.0"
+  tools:
+    - name: "hybrid_search"
+      description: "Search with SQL metadata filtering and vector similarity"
+      pipeline: "hybrid_search"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "Search query"
+          category:
+            type: string
+            description: "Document category filter"
+          min_date:
+            type: string
+            description: "Minimum document date (ISO format)"
+        required:
+          - query
+
+    - name: "document_stats"
+      description: "Get analytics about the document corpus"
+      pipeline: "document_analytics"
+      input_schema:
+        type: object
+        properties: {}

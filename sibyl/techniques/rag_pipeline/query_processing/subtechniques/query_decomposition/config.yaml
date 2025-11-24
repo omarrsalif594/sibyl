@@ -1,0 +1,4 @@
+subtechnique: query_decomposition
+description: "Query decomposition strategies"
+default_implementation: recursive
+enabled: true

@@ -1,0 +1,11 @@
+name: resilience
+description: |
+  Infrastructure resilience techniques for retry logic and circuit breaking.
+  Extracted from hardcoded logic in infrastructure/router.py.
+
+subtechniques:
+  - backoff_strategy
+  - circuit_breaking
+
+default_subtechnique: backoff_strategy
+default_implementation: exponential_jitter

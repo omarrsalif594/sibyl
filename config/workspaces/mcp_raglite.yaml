@@ -1,0 +1,261 @@
+# RAGLite MCP Integration Workspace
+# RAG quality evaluation and hybrid search optimization
+#
+# This workspace demonstrates integration with the RAGLite MCP Server
+# for comprehensive RAG pipeline evaluation using Ragas metrics.
+#
+# MCP Server: https://pypi.org/project/raglite/
+# Categories: evaluation, retrieval_quality
+# Expected Benefits:
+#   - Reference-free RAG evaluation using LLM-as-judge
+#   - 15-25% improvement in retrieval recall via hybrid search
+#   - Multi-metric assessment (context relevancy, recall, faithfulness, answer relevancy)
+#   - Lightweight implementation suitable for high-throughput pipelines
+
+name: "raglite-evaluation"
+description: "RAG evaluation and optimization with RAGLite MCP"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM provider for generation and evaluation
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    # Cheaper model for evaluation tasks
+    evaluator:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.3
+
+  # Embeddings provider
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/raglite_vectors.duckdb"
+      collection_name: "raglite_documents"
+      distance_metric: "cosine"
+
+  # RAGLite MCP Server
+  mcp:
+    raglite:
+      transport: http
+      url: "http://localhost:6001"
+      tools:
+        - hybrid_search
+        - retrieve_with_rerank
+        - evaluate_retrieval
+        - evaluate_generation
+        - evaluate_pipeline
+        - insert_documents
+      timeout_s: 90
+
+# Shop Configurations
+shops:
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      embedder: "rag_pipeline.embedding:default"
+      indexer: "rag_pipeline.indexing:default"
+
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+      top_k: 10
+
+  infrastructure:
+    techniques:
+      evaluator: "infrastructure.evaluation:rag_metrics"
+      logger: "infrastructure.logging:default"
+
+    config:
+      evaluation_model: "gpt-3.5-turbo"
+      log_level: "INFO"
+
+# Pipeline Configurations
+pipelines:
+  # Pipeline 1: RAG with comprehensive evaluation
+  rag_with_eval:
+    shop: rag
+    entrypoint: "rag_eval.run"
+    description: "RAG pipeline with Ragas-based quality evaluation"
+    timeout_s: 180
+    budget:
+      max_cost_usd: 2.0
+      max_tokens: 100000
+    steps:
+      # Step 1: Hybrid search retrieval with reranking
+      - shop: mcp
+        provider: raglite
+        tool: retrieve_with_rerank
+        params:
+          query: "{{ input.query }}"
+          top_k: 20
+          rerank_top_k: 5
+        timeout_s: 30
+
+      # Step 2: Generate answer using LLM
+      # Note: This is a placeholder - actual LLM generation would be implemented
+      # via a technique in the ai_generation shop
+      # For now, we simulate the generation result in context
+
+      # Step 3: Evaluate retrieval quality
+      - shop: mcp
+        provider: raglite
+        tool: evaluate_retrieval
+        params:
+          query: "{{ input.query }}"
+          retrieved_contexts: "{{ context.retrieved_chunks }}"
+          ground_truth_contexts: "{{ input.ground_truth_contexts }}"
+        timeout_s: 30
+
+      # Step 4: Evaluate generation quality
+      - shop: mcp
+        provider: raglite
+        tool: evaluate_generation
+        params:
+          query: "{{ input.query }}"
+          answer: "{{ context.generated_answer }}"
+          contexts: "{{ context.retrieved_chunks }}"
+        timeout_s: 30
+
+      # Step 5: Aggregate and log metrics
+      # This would store metrics for monitoring and analysis
+
+  # Pipeline 2: Hybrid search RAG
+  hybrid_search_rag:
+    shop: rag
+    entrypoint: "hybrid_search.run"
+    description: "RAG with RAGLite hybrid search (BM25 + semantic)"
+    timeout_s: 90
+    steps:
+      # Step 1: Hybrid search using RAGLite
+      - shop: mcp
+        provider: raglite
+        tool: hybrid_search
+        params:
+          query: "{{ input.query }}"
+          k: 10
+          bm25_weight: 0.5
+          semantic_weight: 0.5
+        timeout_s: 30
+
+      # Step 2: Generate answer from retrieved results
+      # Placeholder for LLM generation step
+
+  # Pipeline 3: End-to-end pipeline evaluation
+  evaluate_rag_pipeline:
+    shop: infrastructure
+    entrypoint: "evaluate.run"
+    description: "Evaluate complete RAG pipeline using Ragas metrics"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 1.0
+      max_tokens: 50000
+    steps:
+      # Step 1: Run retrieval
+      - use: rag.retriever
+        config:
+          query: "{{ input.query }}"
+          top_k: 10
+
+      # Step 2: Generate answer (placeholder)
+
+      # Step 3: Evaluate entire pipeline
+      - shop: mcp
+        provider: raglite
+        tool: evaluate_pipeline
+        params:
+          question: "{{ input.query }}"
+          answer: "{{ context.generated_answer }}"
+          contexts: "{{ context.retrieved_contexts }}"
+          ground_truth: "{{ input.ground_truth_answer }}"
+        timeout_s: 60
+
+      # Step 4: Log evaluation results
+      - use: infrastructure.logger
+        config:
+          level: "INFO"
+          message: "Pipeline evaluation: {{ context.evaluation_results }}"
+
+  # Pipeline 4: Batch evaluation for benchmarking
+  batch_evaluate:
+    shop: infrastructure
+    entrypoint: "batch_eval.run"
+    description: "Evaluate multiple queries for pipeline benchmarking"
+    timeout_s: 300
+    budget:
+      max_cost_usd: 5.0
+      max_tokens: 200000
+    steps:
+      # This pipeline would iterate over a batch of test queries
+      # and evaluate each one, aggregating metrics at the end
+
+      # Step 1: For each test query, run retrieval + generation + evaluation
+      # (Implementation would use looping construct or parallel execution)
+
+      # Step 2: Aggregate metrics across all queries
+      # Calculate mean, median, p95 for each metric
+
+      # Step 3: Generate evaluation report
+      - use: infrastructure.logger
+        config:
+          level: "INFO"
+          message: "Batch evaluation complete: {{ context.aggregated_metrics }}"
+
+  # Pipeline 5: Document ingestion with quality checks
+  ingest_with_validation:
+    shop: rag
+    entrypoint: "ingest.run"
+    description: "Ingest documents with automatic quality validation"
+    timeout_s: 180
+    steps:
+      # Step 1: Chunk documents
+      - use: rag.chunker
+        config:
+          chunk_size: 512
+          chunk_overlap: 50
+
+      # Step 2: Generate embeddings
+      - use: rag.embedder
+        config:
+          model: "text-embedding-3-small"
+
+      # Step 3: Insert documents using RAGLite
+      - shop: mcp
+        provider: raglite
+        tool: insert_documents
+        params:
+          documents: "{{ context.chunked_documents }}"
+          embeddings: "{{ context.document_embeddings }}"
+        timeout_s: 60
+
+      # Step 4: Run validation queries to check ingestion quality
+      - shop: mcp
+        provider: raglite
+        tool: hybrid_search
+        params:
+          query: "{{ input.validation_query }}"
+          k: 5
+
+# Global Budget Configuration
+budget:
+  max_cost_usd: 20.0
+  max_tokens: 500000
+  max_requests: 1000

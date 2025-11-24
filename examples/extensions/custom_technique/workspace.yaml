@@ -1,0 +1,100 @@
+# Example workspace using custom reranking technique
+# This demonstrates how to configure and use a custom technique in Sibyl
+
+name: "custom-reranking-demo"
+description: "Demo workspace for custom reranking technique"
+version: "1.0"
+
+# Provider configurations (minimal for demo)
+providers:
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+  embeddings:
+    default:
+      provider: "local_sentence_transformer"
+      model: "all-MiniLM-L6-v2"
+      dimension: 384
+
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/vectors.duckdb"
+      collection_name: "documents"
+
+# Shop configurations with custom technique
+shops:
+  rag:
+    techniques:
+      # Use built-in techniques for chunking and retrieval
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+
+      # Use custom reranking technique
+      # Note: Technique must be registered before use
+      reranker: "simple_reranking:score_based"
+
+    config:
+      # Global RAG config
+      chunk_size: 512
+      chunk_overlap: 50
+
+      # Custom reranker config
+      min_score: 0.75
+      max_results: 5
+
+  rag_diverse:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+
+      # Use diversity reranking strategy
+      reranker: "simple_reranking:diversity"
+
+    config:
+      chunk_size: 512
+      diversity_weight: 0.4
+      max_results: 10
+
+# Pipeline configurations
+pipelines:
+  search_with_reranking:
+    shop: "rag"
+    entrypoint: "search.run"
+    description: "Search with custom score-based reranking"
+    timeout_s: 60
+    steps:
+      - use: "rag.chunker"
+        config:
+          chunk_size: 1024
+
+      - use: "rag.retriever"
+        config:
+          top_k: 20  # Retrieve more than needed
+
+      - use: "rag.reranker"
+        config:
+          min_score: 0.8  # Filter to high quality
+          max_results: 5  # Return top 5
+
+  diverse_search:
+    shop: "rag_diverse"
+    entrypoint: "search.run"
+    description: "Search with diversity reranking"
+    timeout_s: 60
+    steps:
+      - use: "rag.chunker"
+
+      - use: "rag.retriever"
+        config:
+          top_k: 30  # Get more candidates for diversity
+
+      - use: "rag.reranker"
+        config:
+          diversity_weight: 0.5  # Strong diversity preference
+          max_results: 10

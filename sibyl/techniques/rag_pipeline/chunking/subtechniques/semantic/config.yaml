@@ -1,0 +1,19 @@
+# Semantic Chunking Configuration
+
+# Semantic similarity threshold for splitting
+similarity_threshold: 0.7
+
+# Minimum semantic cluster size
+min_cluster_size: 50
+
+# Maximum semantic cluster size
+max_cluster_size: 1500
+
+# Embedding model for semantic analysis
+embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+
+# Whether to use sentence boundaries
+use_sentence_boundaries: true
+
+# Overlap strategy for semantic chunks
+overlap_strategy: "sentence"  # or "token"

@@ -1,0 +1,153 @@
+# Example workspace configuration using PostgreSQL with pgvector extension
+# This demonstrates enterprise-grade vector storage with ACID guarantees
+
+name: "pgvector-example"
+description: "Enterprise RAG setup with PostgreSQL pgvector for production workloads"
+version: "1.0"
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: "local_sentence_transformer"
+      model: "all-MiniLM-L6-v2"
+      dimension: 384
+
+    openai_embeddings:
+      provider: "openai"
+      model: "text-embedding-ada-002"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store configurations - PostgreSQL with pgvector
+  vector_store:
+    # Primary vector store using pgvector with smaller embeddings
+    docs_pg:
+      kind: pgvector
+      dsn: "${DATABASE_URL}"  # Set via environment variable
+      collection_name: doc_embeddings
+      distance_metric: cosine
+      # dimension: 384  # Matches all-MiniLM-L6-v2
+
+    # Alternative store for larger OpenAI embeddings
+    docs_pg_openai:
+      kind: pgvector
+      dsn: "${DATABASE_URL}"  # Set via environment variable
+      collection_name: doc_embeddings_openai
+      distance_metric: cosine
+      # dimension: 1536  # Matches text-embedding-ada-002
+
+# Shop configurations (technique collections)
+shops:
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+      refiner: "ai_generation.refinement:iterative"
+    config:
+      max_iterations: 3
+      quality_threshold: 0.8
+
+# Pipeline configurations (workflows)
+pipelines:
+  document_search:
+    shop: "rag"
+    entrypoint: "search.run"
+    description: "Semantic document search using pgvector"
+    timeout_s: 60
+    steps:
+      - use: "rag.retriever"
+        config:
+          top_k: 10
+          vector_store: "docs_pg"
+      - use: "rag.ranker"
+        config:
+          rerank_top_k: 5
+
+  rag_qa:
+    shop: "ai_generation"
+    entrypoint: "qa.run"
+    description: "Question answering with RAG using pgvector backend"
+    timeout_s: 120
+    steps:
+      - use: "rag.retriever"
+        config:
+          top_k: 5
+          vector_store: "docs_pg"
+      - use: "ai_generation.generator"
+        config:
+          prompt_template: "qa_with_context"
+      - use: "ai_generation.validator"
+        config:
+          min_quality: 0.7
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-pgvector"
+  server_version: "1.0.0"
+  tools:
+    - name: "semantic_search"
+      description: "Search documents semantically using PostgreSQL pgvector"
+      pipeline: "document_search"
+      input_schema:
+        type: "object"
+        properties:
+          query:
+            type: "string"
+            description: "The search query"
+          max_results:
+            type: "integer"
+            description: "Maximum number of results"
+            default: 10
+        required:
+          - "query"
+
+    - name: "rag_question_answer"
+      description: "Answer questions using RAG with pgvector backend"
+      pipeline: "rag_qa"
+      input_schema:
+        type: "object"
+        properties:
+          question:
+            type: "string"
+            description: "The question to answer"
+        required:
+          - "question"
+
+# Setup instructions (for documentation):
+# 1. Install PostgreSQL with pgvector extension:
+#    - PostgreSQL: https://www.postgresql.org/download/
+#    - pgvector: https://github.com/pgvector/pgvector
+#
+# 2. Create database and user:
+#    CREATE DATABASE sibyl_vectors;
+#    CREATE USER sibyl WITH PASSWORD 'your_secure_password';
+#    GRANT ALL PRIVILEGES ON DATABASE sibyl_vectors TO sibyl;
+#
+# 3. Set DATABASE_URL environment variable:
+#    export DATABASE_URL="postgresql://sibyl:your_secure_password@localhost:5432/sibyl_vectors"
+#
+# 4. Install Python dependencies:
+#    pip install psycopg2-binary
+#
+# 5. The table and index will be created automatically on first use

@@ -1,0 +1,4 @@
+subtechnique: fusion
+description: "Result fusion strategies"
+default_implementation: rrf
+enabled: true

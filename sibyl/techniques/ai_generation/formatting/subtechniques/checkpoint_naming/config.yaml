@@ -1,0 +1,4 @@
+subtechnique: checkpoint_naming
+description: "Generate standardized names for checkpoints"
+default_variant: default
+enabled: true

@@ -1,0 +1,4 @@
+subtechnique: query_expansion
+description: "Query expansion techniques"
+default_implementation: synonym
+enabled: true

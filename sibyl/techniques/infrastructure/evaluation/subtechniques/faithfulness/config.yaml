@@ -1,0 +1,4 @@
+subtechnique: faithfulness
+description: "Faithfulness evaluation"
+default_implementation: context_check
+enabled: true

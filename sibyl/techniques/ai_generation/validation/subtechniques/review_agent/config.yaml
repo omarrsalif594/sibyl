@@ -1,0 +1,4 @@
+subtechnique: review_agent
+description: "AI-powered review agent for output validation"
+default_variant: default
+enabled: true

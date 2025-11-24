@@ -1,0 +1,30 @@
+{
+  "status": "completed",
+  "outputs": {
+    "explanation": "## Overview\n\nThe Revenue Overview dashboard is your command center for monitoring the financial health of your business. It provides a comprehensive view of your recurring revenue metrics, customer base, and performance trends across regions and segments.\n\n## Key Metrics\n\n- **Total ARR (Annual Recurring Revenue)**: The total annual value of all active customer subscriptions. This is your primary revenue metric.\n- **Total MRR (Monthly Recurring Revenue)**: The monthly equivalent, showing predictable revenue each month.\n- **Active Customers**: The count of customers with currently active subscriptions.\n- **Average Revenue Per Customer**: Total ARR divided by active customers, indicating customer value.\n\n## How to Use\n\n1. Start by reviewing the metric cards at the top of the dashboard for a quick health check\n2. Examine the revenue trend chart in the middle to identify growth patterns or declines\n3. Review the Regional Performance table to understand which markets are performing well\n4. Use the date range selector to compare different time periods\n5. Filter by customer segment (Enterprise, Professional, Starter) to analyze specific cohorts\n\n## Pro Tips\n\n- Check the dashboard weekly to stay on top of revenue trends\n- Look for sudden drops in MRR as an early warning sign of churn\n- Compare regional performance to identify expansion opportunities\n- Use the export feature to share insights with stakeholders",
+    "sources": [
+      {
+        "id": "dashboard_user_guide.md",
+        "content": "The Revenue Overview dashboard displays key metrics including ARR, MRR, active customers, and regional breakdowns...",
+        "metadata": {
+          "title": "Dashboard User Guide",
+          "section": "Revenue Overview"
+        },
+        "score": 0.92
+      },
+      {
+        "id": "kpi_calculation_methods.md",
+        "content": "MRR (Monthly Recurring Revenue) is calculated as the sum of all active subscription monthly values...",
+        "metadata": {
+          "title": "KPI Calculation Methods"
+        },
+        "score": 0.85
+      }
+    ],
+    "quality_score": 0.88
+  },
+  "metadata": {
+    "pipeline_name": "explain_dashboard",
+    "steps_completed": 6
+  }
+}

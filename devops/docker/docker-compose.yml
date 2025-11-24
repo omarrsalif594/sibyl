@@ -1,0 +1,683 @@
+# =============================================================================
+# Sibyl MCP Server - Docker Compose Configuration
+# =============================================================================
+# Production-ready compose file with:
+# - Compose profiles (dev, prod, observability)
+# - Network isolation (public, private)
+# - Resource limits and health checks
+# - Volume management and secrets
+# - Full observability stack (Prometheus, Grafana, Loki, Fluent Bit, Jaeger)
+#
+# Usage:
+#   # Development mode (simple, direct access)
+#   docker compose --profile dev up
+#
+#   # Development with observability
+#   docker compose --profile dev --profile observability up
+#
+#   # Production mode (with nginx, full observability)
+#   docker compose --profile prod --profile observability up -d
+#
+#   # Production with everything (nginx + observability + tracing)
+#   docker compose --profile prod --profile observability --profile tracing up -d
+# =============================================================================
+
+version: '3.8'
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  # Public network (nginx <-> internet)
+  public:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+  # Private network (app <-> observability, isolated from internet)
+  private:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  # Sibyl application state
+  sibyl_state:
+    driver: local
+  sibyl_logs:
+    driver: local
+  sibyl_cache:
+    driver: local
+
+  # Observability data
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+
+  # Backups
+  sibyl_backups:
+    driver: local
+
+# =============================================================================
+# Secrets (create .secrets directory with API keys)
+# =============================================================================
+secrets:
+  sibyl_api_keys:
+    file: ${SECRETS_FILE:-./.secrets/api_keys.txt}
+
+# =============================================================================
+# Services
+# =============================================================================
+services:
+  # ---------------------------------------------------------------------------
+  # Sibyl MCP Server - Development Mode
+  # ---------------------------------------------------------------------------
+  sibyl-dev:
+    build:
+      context: ../..
+      dockerfile: devops/docker/Dockerfile
+      target: development
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        VCS_REF: ${VCS_REF:-dev}
+        VERSION: ${VERSION:-0.1.0-dev}
+    image: sibyl-mcp:${VERSION:-latest}-dev
+    container_name: sibyl-dev
+    hostname: sibyl-dev
+    restart: unless-stopped
+
+    # Only run with dev profile
+    profiles:
+      - dev
+
+    # Networks
+    networks:
+      - public
+      - private
+
+    # Ports (direct access in dev mode)
+    ports:
+      - "${SIBYL_MCP_HTTP_PORT:-8770}:8770"   # MCP HTTP Server
+      - "${SIBYL_REST_PORT:-8000}:8000"        # REST API
+      - "${SIBYL_METRICS_PORT:-9090}:9090"     # Prometheus metrics
+
+    # Environment variables
+    environment:
+      # Server mode (stdio|http|rest)
+      SIBYL_SERVER_MODE: ${SIBYL_SERVER_MODE:-http}
+
+      # Server settings
+      MCP_HTTP_HOST: 0.0.0.0
+      MCP_HTTP_PORT: 8770
+      SIBYL_HOST: 0.0.0.0
+      SIBYL_PORT: 8000
+      SIBYL_LOG_LEVEL: ${SIBYL_LOG_LEVEL:-DEBUG}
+      SIBYL_METRICS_PORT: 9090
+      SIBYL_ENABLE_METRICS: "true"
+      SIBYL_ENABLE_HTTP_SERVER: "true"
+
+      # DuckDB configuration
+      DUCKDB_MEMORY_LIMIT: ${DUCKDB_MEMORY_LIMIT:-2GB}
+      MCP_DUCKDB_PATH: /var/lib/sibyl/state/sibyl_state.duckdb
+
+      # Workspace configuration
+      SIBYL_WORKSPACE_FILE: ${SIBYL_WORKSPACE_FILE:-/app/config/workspaces/example_local.yaml}
+
+      # Logging
+      SIBYL_LOG_FILE: /var/log/sibyl/sibyl.log
+
+      # API Keys (loaded from environment or secrets)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+    # Secrets
+    secrets:
+      - sibyl_api_keys
+
+    # Volumes
+    volumes:
+      # Application state
+      - sibyl_state:/var/lib/sibyl/state
+      - sibyl_logs:/var/log/sibyl
+      - sibyl_cache:/var/cache/sibyl
+
+      # Mount source code for hot-reload in development
+      - ../../sibyl:/app/sibyl:rw
+      - ../../config:/app/config:ro
+
+      # Workspace mount (optional, for accessing local files)
+      - ${WORKSPACE_PATH:-../../../}:/workspace:ro
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: ${SIBYL_CPU_LIMIT:-2.0}
+          memory: ${SIBYL_MEMORY_LIMIT:-4G}
+        reservations:
+          cpus: ${SIBYL_CPU_REQUEST:-0.5}
+          memory: ${SIBYL_MEMORY_REQUEST:-1G}
+
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/local/bin/health-check.sh || curl -f http://localhost:8770/health 2>/dev/null || curl -f http://localhost:8000/health 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+
+  # ---------------------------------------------------------------------------
+  # Sibyl MCP Server - Production Mode
+  # ---------------------------------------------------------------------------
+  sibyl-prod:
+    build:
+      context: ../..
+      dockerfile: devops/docker/Dockerfile
+      target: runtime
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        VCS_REF: ${VCS_REF:-main}
+        VERSION: ${VERSION:-0.1.0}
+    image: sibyl-mcp:${VERSION:-latest}
+    container_name: sibyl-prod
+    hostname: sibyl-prod
+    restart: unless-stopped
+
+    # Only run with prod profile
+    profiles:
+      - prod
+
+    # Networks (no direct public access, only through nginx)
+    networks:
+      - private
+
+    # No external ports in prod (nginx handles this)
+    # Expose ports are for internal container communication only
+    expose:
+      - "8770"  # MCP HTTP
+      - "8000"  # REST API
+      - "9090"  # Metrics
+
+    # Environment variables
+    environment:
+      # Server mode
+      SIBYL_SERVER_MODE: ${SIBYL_SERVER_MODE:-http}
+
+      # Server settings
+      MCP_HTTP_HOST: 0.0.0.0
+      MCP_HTTP_PORT: 8770
+      SIBYL_HOST: 0.0.0.0
+      SIBYL_PORT: 8000
+      SIBYL_LOG_LEVEL: ${SIBYL_LOG_LEVEL:-INFO}
+      SIBYL_METRICS_PORT: 9090
+      SIBYL_ENABLE_METRICS: "true"
+      SIBYL_ENABLE_HTTP_SERVER: "true"
+
+      # DuckDB configuration
+      DUCKDB_MEMORY_LIMIT: ${DUCKDB_MEMORY_LIMIT:-2GB}
+      MCP_DUCKDB_PATH: /var/lib/sibyl/state/sibyl_state.duckdb
+
+      # Workspace configuration
+      SIBYL_WORKSPACE_FILE: ${SIBYL_WORKSPACE_FILE:-/app/config/workspaces/prod_web_research.yaml}
+
+      # Logging
+      SIBYL_LOG_FILE: /var/log/sibyl/sibyl.log
+
+      # API Keys (from secrets in production)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+    # Secrets
+    secrets:
+      - sibyl_api_keys
+
+    # Volumes
+    volumes:
+      # Application state (persistent)
+      - sibyl_state:/var/lib/sibyl/state
+      - sibyl_logs:/var/log/sibyl
+      - sibyl_cache:/var/cache/sibyl
+
+      # Workspace configurations (read-only)
+      - ../../config:/app/config:ro
+
+      # Workspace mount (optional)
+      - ${WORKSPACE_PATH:-../../../}:/workspace:ro
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: ${SIBYL_CPU_LIMIT:-4.0}
+          memory: ${SIBYL_MEMORY_LIMIT:-8G}
+        reservations:
+          cpus: ${SIBYL_CPU_REQUEST:-1.0}
+          memory: ${SIBYL_MEMORY_REQUEST:-2G}
+
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/local/bin/health-check.sh || curl -f http://localhost:8770/health 2>/dev/null || curl -f http://localhost:8000/health 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+    # Logging (forward to Loki via Fluent Bit)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    # Uncomment for read-only root filesystem (requires writable tmpfs)
+    # read_only: true
+    # tmpfs:
+    #   - /tmp/sibyl:size=512M,mode=1777
+    #   - /var/run:size=10M,mode=755
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy (Production)
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: sibyl-nginx
+    hostname: nginx
+    restart: unless-stopped
+
+    # Only run with prod profile
+    profiles:
+      - prod
+
+    # Networks
+    networks:
+      - public
+      - private
+
+    # Ports
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+
+    # Volumes
+    volumes:
+      - ../config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../config/ssl:/etc/nginx/ssl:ro
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    depends_on:
+      sibyl-prod:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Prometheus (Metrics Collection)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: sibyl-prometheus
+    hostname: prometheus
+    restart: unless-stopped
+
+    # Only run with observability profile
+    profiles:
+      - observability
+
+    # Networks
+    networks:
+      - private
+      - public  # For web UI access
+
+    # Ports
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+
+    # Command
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+    # Volumes
+    volumes:
+      - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Grafana (Metrics Visualization)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: sibyl-grafana
+    hostname: grafana
+    restart: unless-stopped
+
+    # Only run with observability profile
+    profiles:
+      - observability
+
+    # Networks
+    networks:
+      - private
+      - public  # For web UI access
+
+    # Ports
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+
+    # Environment
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS:-grafana-piechart-panel,grafana-polystat-panel}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/sibyl-overview.json
+
+    # Volumes
+    volumes:
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    depends_on:
+      prometheus:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Loki (Log Aggregation)
+  # ---------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: sibyl-loki
+    hostname: loki
+    restart: unless-stopped
+
+    # Only run with observability profile
+    profiles:
+      - observability
+
+    # Networks
+    networks:
+      - private
+
+    # Ports
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+
+    # Command
+    command: -config.file=/etc/loki/local-config.yaml
+
+    # Volumes
+    volumes:
+      - ../observability/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Fluent Bit (Log Forwarding)
+  # ---------------------------------------------------------------------------
+  fluent-bit:
+    image: fluent/fluent-bit:2.2.0
+    container_name: sibyl-fluent-bit
+    hostname: fluent-bit
+    restart: unless-stopped
+
+    # Only run with observability profile
+    profiles:
+      - observability
+
+    # Networks
+    networks:
+      - private
+
+    # Volumes
+    volumes:
+      - ../observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - sibyl_logs:/var/log/sibyl:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Jaeger (Distributed Tracing)
+  # ---------------------------------------------------------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: sibyl-jaeger
+    hostname: jaeger
+    restart: unless-stopped
+
+    # Only run with tracing profile
+    profiles:
+      - tracing
+
+    # Networks
+    networks:
+      - private
+      - public  # For UI access
+
+    # Ports
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"        # UI
+      - "${JAEGER_COLLECTOR_PORT:-14268}:14268" # Collector HTTP
+      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"   # OTLP gRPC
+      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"   # OTLP HTTP
+
+    # Environment
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: :9411
+      COLLECTOR_OTLP_ENABLED: "true"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:14269"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Backup Service (Automated DuckDB Backups)
+  # ---------------------------------------------------------------------------
+  backup:
+    image: alpine:3.19
+    container_name: sibyl-backup
+    hostname: backup
+    restart: unless-stopped
+
+    # Only run with prod profile
+    profiles:
+      - prod
+
+    # Networks
+    networks:
+      - private
+
+    # Volumes
+    volumes:
+      - sibyl_state:/source/state:ro
+      - sibyl_backups:/backups
+      - ../scripts/backup-state.sh:/backup-state.sh:ro
+
+    # Command (run backup daily at 2 AM UTC)
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache dcron bash curl
+        echo "0 2 * * * /bin/bash /backup-state.sh" | crontab -
+        echo "Backup cron job installed. Running daily at 2 AM UTC."
+        crond -f -l 2
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

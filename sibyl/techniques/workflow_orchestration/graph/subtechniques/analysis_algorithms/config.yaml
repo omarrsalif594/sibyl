@@ -1,0 +1,4 @@
+subtechnique: analysis_algorithms
+description: "Graph analysis algorithms"
+default_implementation: cycle_detection
+enabled: true

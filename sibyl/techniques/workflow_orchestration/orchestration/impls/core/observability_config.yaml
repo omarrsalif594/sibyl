@@ -1,0 +1,25 @@
+# Observability Configuration
+# Extracted from hardcoded logic in observability.py:30-48, 326-333
+
+# Sampling strategy configuration (from observability.py:30-48)
+sampling_strategy:
+  success_rate: 0.1          # Sample 10% of successful calls
+  failure_rate: 1.0           # Sample 100% of failed calls
+  slow_threshold_ms: 5000     # Calls over 5 seconds are "slow"
+  slow_rate: 1.0              # Sample 100% of slow calls
+
+# Standard metric dimensions (from observability.py:326-333)
+standard_dimensions:
+  - provider        # LLM provider (anthropic, openai, etc.)
+  - model           # Model name
+  - phase           # Workflow phase
+  - expert_type     # Domain expert type
+  - finish_reason   # LLM finish reason
+
+# Additional dimensions (can be extended per deployment)
+additional_dimensions: []
+
+# Metrics export configuration
+metrics_export:
+  enabled: true
+  sample_rate: 1.0  # Global sample rate for metrics export

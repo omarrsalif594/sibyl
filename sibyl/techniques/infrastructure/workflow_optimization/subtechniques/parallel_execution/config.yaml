@@ -1,0 +1,4 @@
+subtechnique: parallel_execution
+description: "Parallel execution methods"
+default_implementation: multi_thread
+enabled: true

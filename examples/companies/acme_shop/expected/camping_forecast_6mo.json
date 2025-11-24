@@ -1,0 +1,11 @@
+{
+  "category": "Camping",
+  "forecast_length": 6,
+  "frequency": "monthly",
+  "horizon": 6,
+  "metadata": {
+    "has_mae": true,
+    "model": "prophet",
+    "provider": "chronulus"
+  }
+}

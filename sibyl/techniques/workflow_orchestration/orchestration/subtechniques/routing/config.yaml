@@ -1,0 +1,4 @@
+subtechnique: routing
+description: "Task routing strategies"
+default_implementation: expert_routing
+enabled: true

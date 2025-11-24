@@ -1,0 +1,4 @@
+subtechnique: learning_algorithm
+description: "Learning algorithm types"
+default_implementation: pattern_based
+enabled: true

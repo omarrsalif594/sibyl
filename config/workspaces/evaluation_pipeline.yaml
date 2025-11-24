@@ -1,0 +1,537 @@
+# Evaluation Pipeline Workspace
+# Purpose: Automated evaluation and comparison of techniques and outputs
+# Optimized for A/B testing, benchmark analysis, and quality assessment
+# Requires: OPENAI_API_KEY or ANTHROPIC_API_KEY
+
+name: "evaluation-pipeline"
+description: "Evaluation workspace for comparing techniques, benchmarking, and quality assessment"
+version: "1.0"
+
+# Global budget limits - can be high for batch evaluation
+budget:
+  max_cost_usd: 10.0
+  max_tokens: 200000
+  max_requests: 100
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.3
+
+    reference:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.3
+
+    candidate_a:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.5
+
+    candidate_b:
+      provider: "anthropic"
+      model: "claude-3-5-sonnet-20241022"
+      api_key_env: "ANTHROPIC_API_KEY"
+      max_tokens: 4096
+      temperature: 0.5
+
+    judge:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.3
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector stores
+  vector_store:
+    evaluation_results:
+      kind: "duckdb"
+      dsn: "duckdb://./data/evaluation_results.duckdb"
+      collection_name: "evaluation_data"
+      distance_metric: "cosine"
+
+    benchmark_data:
+      kind: "duckdb"
+      dsn: "duckdb://./data/benchmark_data.duckdb"
+      collection_name: "benchmarks"
+      distance_metric: "cosine"
+
+  # External MCP providers
+  mcp:
+    filesystem:
+      type: "stdio_mcp"
+      endpoint: "mcp-server-filesystem"
+      tools:
+        - "read_file"
+        - "write_file"
+        - "list_directory"
+      timeout_s: 30
+
+# Shop configurations
+shops:
+  # RAG evaluation shop
+  rag_evaluation:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 1024
+      chunk_overlap: 100
+      top_k: 20
+      rerank_top_k: 10
+
+  # AI Generation evaluation shop
+  generation_evaluation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+      refiner: "ai_generation.refinement:iterative"
+    config:
+      max_iterations: 3
+      quality_threshold: 0.80
+
+  # Evaluation and comparison shop
+  evaluation:
+    techniques:
+      evaluator: "evaluation.assessment:criterion"
+      comparator: "evaluation.comparison:pairwise"
+      aggregator: "evaluation.aggregation:statistical"
+    config:
+      metrics: ["accuracy", "relevance", "coherence", "efficiency"]
+      aggregation_method: "weighted_average"
+
+  # Analysis shop
+  analysis:
+    techniques:
+      analyzer: "analysis.metrics:compute"
+      reporter: "analysis.reporting:generate"
+    config:
+      report_format: "markdown"
+      include_visualizations: true
+
+# Pipeline configurations
+pipelines:
+  # Generate candidate outputs
+  generate_candidates:
+    shop: "generation_evaluation"
+    description: "Generate outputs from multiple models for comparison"
+    timeout_s: 300
+    budget:
+      max_cost_usd: 3.0
+      max_tokens: 30000
+      max_requests: 20
+    steps:
+      - use: "generation_evaluation.generator"
+        config:
+          llm_provider: "candidate_a"
+          prompt_template: "evaluation_test"
+
+      - use: "generation_evaluation.validator"
+        config:
+          min_quality: 0.70
+
+  # RAG retrieval evaluation
+  evaluate_rag_retrieval:
+    shop: "rag_evaluation"
+    description: "Evaluate retrieval quality and ranking effectiveness"
+    timeout_s: 240
+    budget:
+      max_cost_usd: 2.0
+      max_tokens: 20000
+      max_requests: 15
+    steps:
+      - use: "rag_evaluation.chunker"
+        config:
+          chunk_size: 1024
+          chunk_overlap: 100
+
+      - use: "rag_evaluation.retriever"
+        config:
+          top_k: 20
+          min_score: 0.5
+
+      - use: "rag_evaluation.ranker"
+        config:
+          rerank_top_k: 10
+          llm_provider: "judge"
+
+      - use: "rag_evaluation.synthesizer"
+        config:
+          llm_provider: "default"
+
+  # Output quality assessment
+  assess_output_quality:
+    shop: "evaluation"
+    description: "Assess and score generated outputs across multiple criteria"
+    timeout_s: 180
+    budget:
+      max_cost_usd: 1.5
+      max_tokens: 15000
+      max_requests: 10
+    steps:
+      - use: "evaluation.evaluator"
+        config:
+          llm_provider: "judge"
+          criteria:
+            - "accuracy"
+            - "completeness"
+            - "clarity"
+            - "coherence"
+          scoring_rubric: "detailed"
+
+  # Pairwise comparison pipeline
+  compare_outputs:
+    shop: "evaluation"
+    description: "Compare two outputs using pairwise comparison methodology"
+    timeout_s: 150
+    budget:
+      max_cost_usd: 1.0
+      max_tokens: 10000
+      max_requests: 5
+    steps:
+      - use: "evaluation.comparator"
+        config:
+          llm_provider: "judge"
+          comparison_type: "pairwise"
+          criteria:
+            - "quality"
+            - "relevance"
+            - "completeness"
+          output_format: "structured"
+
+  # Statistical aggregation pipeline
+  aggregate_results:
+    shop: "analysis"
+    description: "Aggregate evaluation results and generate statistical analysis"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 0.75
+      max_tokens: 8000
+      max_requests: 5
+    steps:
+      - use: "analysis.analyzer"
+        config:
+          metrics:
+            - "mean"
+            - "std_dev"
+            - "percentiles"
+          include_outlier_analysis: true
+
+      - use: "analysis.reporter"
+        config:
+          report_format: "markdown"
+          include_charts: true
+          include_recommendations: true
+
+  # Benchmark pipeline
+  run_benchmark:
+    shop: "rag_evaluation"
+    description: "Run comprehensive benchmark tests on retrieval and ranking"
+    timeout_s: 600
+    budget:
+      max_cost_usd: 5.0
+      max_tokens: 50000
+      max_requests: 30
+    steps:
+      - use: "rag_evaluation.retriever"
+        config:
+          top_k: 30
+          min_score: 0.3
+
+      - use: "rag_evaluation.ranker"
+        config:
+          rerank_top_k: 10
+          llm_provider: "judge"
+
+      - use: "rag_evaluation.synthesizer"
+        config:
+          llm_provider: "default"
+
+  # A/B test pipeline
+  run_ab_test:
+    shop: "evaluation"
+    description: "Run A/B test comparing two techniques or models"
+    timeout_s: 480
+    budget:
+      max_cost_usd: 4.0
+      max_tokens: 40000
+      max_requests: 25
+    steps:
+      - use: "evaluation.evaluator"
+        config:
+          llm_provider: "judge"
+          test_type: "ab_test"
+          sample_size: 100
+          confidence_level: 0.95
+
+      - use: "evaluation.aggregator"
+        config:
+          aggregation_method: "statistical_significance"
+          include_effect_size: true
+
+  # Regression detection pipeline
+  detect_regressions:
+    shop: "analysis"
+    description: "Detect performance regressions compared to baseline"
+    timeout_s: 180
+    budget:
+      max_cost_usd: 1.5
+      max_tokens: 15000
+      max_requests: 10
+    steps:
+      - use: "analysis.analyzer"
+        config:
+          comparison_type: "regression"
+          baseline_version: "current"
+          threshold_pct: 5.0
+
+      - use: "analysis.reporter"
+        config:
+          report_format: "markdown"
+          include_recommendations: true
+          alert_on_regression: true
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-evaluation-pipeline"
+  server_version: "1.0.0"
+  tools:
+    - name: "generate_candidates"
+      description: "Generate candidate outputs from different models for comparison. Useful for A/B testing and model evaluation."
+      pipeline: "generate_candidates"
+      input_schema:
+        type: "object"
+        properties:
+          prompt:
+            type: "string"
+            description: "The prompt to generate outputs for"
+          num_candidates:
+            type: "integer"
+            description: "Number of candidate models to use (default: 2)"
+            default: 2
+            minimum: 1
+            maximum: 4
+          evaluation_context:
+            type: "string"
+            description: "Context or background for the generation task"
+        required:
+          - "prompt"
+
+    - name: "evaluate_retrieval"
+      description: "Evaluate RAG retrieval quality and ranking effectiveness. Returns detailed metrics and scores."
+      pipeline: "evaluate_rag_retrieval"
+      input_schema:
+        type: "object"
+        properties:
+          queries:
+            type: "array"
+            description: "List of queries to evaluate"
+            items:
+              type: "string"
+          top_k:
+            type: "integer"
+            description: "Number of retrieved results to evaluate (default: 10)"
+            default: 10
+          evaluation_criteria:
+            type: "array"
+            description: "Criteria to evaluate (relevance, diversity, ranking_quality)"
+            items:
+              type: "string"
+        required:
+          - "queries"
+
+    - name: "assess_quality"
+      description: "Assess and score outputs across multiple quality criteria. Returns detailed scores and feedback."
+      pipeline: "assess_output_quality"
+      input_schema:
+        type: "object"
+        properties:
+          outputs:
+            type: "array"
+            description: "List of outputs to assess"
+            items:
+              type: "string"
+          criteria:
+            type: "array"
+            description: "Evaluation criteria (accuracy, completeness, clarity, coherence)"
+            items:
+              type: "string"
+              enum:
+                - "accuracy"
+                - "completeness"
+                - "clarity"
+                - "coherence"
+                - "factuality"
+          rubric_type:
+            type: "string"
+            description: "Type of scoring rubric"
+            enum:
+              - "simple"
+              - "detailed"
+              - "comprehensive"
+            default: "detailed"
+        required:
+          - "outputs"
+          - "criteria"
+
+    - name: "compare_outputs"
+      description: "Compare two outputs using pairwise comparison. Returns comparison scores and winner."
+      pipeline: "compare_outputs"
+      input_schema:
+        type: "object"
+        properties:
+          output_a:
+            type: "string"
+            description: "First output to compare"
+          output_b:
+            type: "string"
+            description: "Second output to compare"
+          criteria:
+            type: "array"
+            description: "Comparison criteria"
+            items:
+              type: "string"
+          context:
+            type: "string"
+            description: "Context or prompt that generated these outputs"
+        required:
+          - "output_a"
+          - "output_b"
+
+    - name: "aggregate_evaluation"
+      description: "Aggregate multiple evaluation results and generate statistical analysis. Returns summary metrics and insights."
+      pipeline: "aggregate_results"
+      input_schema:
+        type: "object"
+        properties:
+          evaluation_results:
+            type: "array"
+            description: "List of evaluation scores or results to aggregate"
+            items:
+              type: "number"
+          aggregation_method:
+            type: "string"
+            description: "How to aggregate results"
+            enum:
+              - "mean"
+              - "median"
+              - "weighted_average"
+              - "bayesian"
+            default: "mean"
+          include_percentiles:
+            type: "boolean"
+            description: "Include percentile analysis (default: true)"
+            default: true
+        required:
+          - "evaluation_results"
+
+    - name: "run_benchmark"
+      description: "Run comprehensive benchmark tests on retrieval and ranking systems. Returns detailed performance metrics."
+      pipeline: "run_benchmark"
+      input_schema:
+        type: "object"
+        properties:
+          test_queries:
+            type: "array"
+            description: "Set of queries for benchmarking"
+            items:
+              type: "string"
+          benchmark_name:
+            type: "string"
+            description: "Name/identifier for this benchmark run"
+          expected_results:
+            type: "array"
+            description: "Expected relevant results for each query (for recall calculation)"
+            items:
+              type: "array"
+              items:
+                type: "string"
+        required:
+          - "test_queries"
+          - "benchmark_name"
+
+    - name: "run_ab_test"
+      description: "Run A/B test comparing two techniques or models statistically. Returns significance and effect size."
+      pipeline: "run_ab_test"
+      input_schema:
+        type: "object"
+        properties:
+          variant_a_results:
+            type: "array"
+            description: "Evaluation results from variant A"
+            items:
+              type: "number"
+          variant_b_results:
+            type: "array"
+            description: "Evaluation results from variant B"
+            items:
+              type: "number"
+          confidence_level:
+            type: "number"
+            description: "Statistical confidence level (0.9, 0.95, 0.99)"
+            default: 0.95
+            minimum: 0.9
+            maximum: 0.99
+          test_type:
+            type: "string"
+            description: "Type of statistical test"
+            enum:
+              - "t_test"
+              - "mann_whitney"
+              - "chi_square"
+            default: "t_test"
+        required:
+          - "variant_a_results"
+          - "variant_b_results"
+
+    - name: "detect_regressions"
+      description: "Detect performance regressions compared to baseline. Returns regression analysis and alerts."
+      pipeline: "detect_regressions"
+      input_schema:
+        type: "object"
+        properties:
+          current_metrics:
+            type: "object"
+            description: "Current performance metrics"
+            additionalProperties:
+              type: "number"
+          baseline_metrics:
+            type: "object"
+            description: "Baseline performance metrics to compare against"
+            additionalProperties:
+              type: "number"
+          regression_threshold:
+            type: "number"
+            description: "Performance drop threshold percentage (default: 5%)"
+            default: 5.0
+          alert_severity:
+            type: "string"
+            description: "Alert level for detected regressions"
+            enum:
+              - "info"
+              - "warning"
+              - "critical"
+            default: "warning"
+        required:
+          - "current_metrics"
+          - "baseline_metrics"

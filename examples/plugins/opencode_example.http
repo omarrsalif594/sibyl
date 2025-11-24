@@ -1,0 +1,428 @@
+###
+# OpenCode Integration Examples
+#
+# These examples demonstrate how OpenCode (or any OpenAI-compatible client)
+# interacts with Sibyl's OpenAI facade for AI-powered coding assistance.
+#
+# Prerequisites:
+# - Sibyl server running on http://localhost:8000
+# - Workspace configured with routing profiles
+#
+# Usage with VS Code REST Client extension:
+# 1. Install "REST Client" extension
+# 2. Open this file
+# 3. Click "Send Request" above each request
+###
+
+@baseUrl = http://localhost:8000/v1
+@apiKey = sibyl_key
+
+###
+# Example 1: Basic Code Completion (Fast Profile)
+# Scenario: OpenCode requests inline code completion
+# Profile: sibyl/code-fast for low latency
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-fast",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful coding assistant. Provide concise, accurate code completions."
+    },
+    {
+      "role": "user",
+      "content": "def calculate_fibonacci(n):\n    # Complete this function"
+    }
+  ],
+  "temperature": 0.3,
+  "max_tokens": 200,
+  "stop": ["\n\n", "def "]
+}
+
+###
+# Example 2: Code Explanation (Balanced Profile)
+# Scenario: User selects code and asks "Explain this"
+# Profile: sibyl/code-balanced for better quality
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-balanced",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful coding assistant. Explain code clearly and concisely."
+    },
+    {
+      "role": "user",
+      "content": "Explain this code:\n\ndef fibonacci(n, memo={}):\n    if n in memo:\n        return memo[n]\n    if n <= 2:\n        return 1\n    memo[n] = fibonacci(n-1, memo) + fibonacci(n-2, memo)\n    return memo[n]"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 1000
+}
+
+###
+# Example 3: Bug Fix Suggestion (Balanced Profile)
+# Scenario: User right-clicks code and selects "Fix this code"
+# Profile: sibyl/code-balanced for analysis + fix
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-balanced",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a code reviewer. Identify bugs and suggest fixes."
+    },
+    {
+      "role": "user",
+      "content": "Find and fix bugs in this code:\n\ndef divide_numbers(a, b):\n    return a / b\n\nresult = divide_numbers(10, 0)"
+    }
+  ],
+  "temperature": 0.5,
+  "max_tokens": 1500
+}
+
+###
+# Example 4: Architecture Design (Think Profile)
+# Scenario: User asks for system design help
+# Profile: sibyl/code-think for deep reasoning
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-think",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a senior software architect. Provide detailed, well-reasoned architectural advice."
+    },
+    {
+      "role": "user",
+      "content": "Design a scalable microservices architecture for an e-commerce platform with payment processing, inventory management, and order fulfillment services. Consider fault tolerance and eventual consistency."
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 2000
+}
+
+###
+# Example 5: Multi-Turn Conversation
+# Scenario: OpenCode maintains conversation history
+# Profile: sibyl/code-balanced with context
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-balanced",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful coding assistant."
+    },
+    {
+      "role": "user",
+      "content": "How do I implement a binary tree in Python?"
+    },
+    {
+      "role": "assistant",
+      "content": "Here's a basic binary tree implementation:\n\n```python\nclass TreeNode:\n    def __init__(self, value):\n        self.value = value\n        self.left = None\n        self.right = None\n\nclass BinaryTree:\n    def __init__(self):\n        self.root = None\n    \n    def insert(self, value):\n        if not self.root:\n            self.root = TreeNode(value)\n        else:\n            self._insert_recursive(self.root, value)\n    \n    def _insert_recursive(self, node, value):\n        if value < node.value:\n            if node.left is None:\n                node.left = TreeNode(value)\n            else:\n                self._insert_recursive(node.left, value)\n        else:\n            if node.right is None:\n                node.right = TreeNode(value)\n            else:\n                self._insert_recursive(node.right, value)\n```"
+    },
+    {
+      "role": "user",
+      "content": "Now add a method to find the height of the tree"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 1000
+}
+
+###
+# Example 6: Context-Aware Completion with Metadata
+# Scenario: OpenCode sends file context and workspace info
+# Profile: sibyl/code-fast with Sibyl metadata extensions
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-fast",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful coding assistant. Current file: src/utils.py"
+    },
+    {
+      "role": "user",
+      "content": "# File: src/utils.py\nimport math\nimport statistics\n\ndef calculate_score(data):\n    # Calculate average score from data list\n    "
+    }
+  ],
+  "temperature": 0.3,
+  "max_tokens": 200,
+  "metadata": {
+    "workspace": "/Users/dev/myproject",
+    "editor": {
+      "file": "src/utils.py",
+      "line": 6,
+      "column": 4,
+      "language": "python"
+    },
+    "project_context": {
+      "framework": "fastapi",
+      "language": "python",
+      "version": "3.11"
+    }
+  }
+}
+
+###
+# Example 7: Type Hints Addition
+# Scenario: User selects function and requests "Add type hints"
+# Profile: sibyl/code-fast for quick transformation
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-fast",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Add Python type hints to the provided code. Maintain the original logic."
+    },
+    {
+      "role": "user",
+      "content": "def calculate_total(items):\n    total = 0\n    for item in items:\n        total += item.price\n    return total"
+    }
+  ],
+  "temperature": 0.2,
+  "max_tokens": 300
+}
+
+###
+# Example 8: Test Generation
+# Scenario: User requests unit tests for a function
+# Profile: sibyl/code-balanced for comprehensive tests
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-balanced",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Generate comprehensive pytest unit tests for the provided code. Include edge cases."
+    },
+    {
+      "role": "user",
+      "content": "Generate pytest tests for this function:\n\ndef divide_numbers(a: float, b: float) -> float:\n    if b == 0:\n        raise ValueError(\"Cannot divide by zero\")\n    return a / b"
+    }
+  ],
+  "temperature": 0.5,
+  "max_tokens": 1000
+}
+
+###
+# Example 9: Refactoring Suggestion
+# Scenario: User asks for refactoring advice
+# Profile: sibyl/code-think for thorough analysis
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-think",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert at code refactoring. Suggest improvements while maintaining functionality."
+    },
+    {
+      "role": "user",
+      "content": "Refactor this code to improve readability and maintainability:\n\ndef process_data(data):\n    result = []\n    for item in data:\n        if item.status == 'active' and item.priority > 5 and item.category in ['urgent', 'critical']:\n            processed = {'id': item.id, 'value': item.value * 1.5, 'date': item.date.strftime('%Y-%m-%d')}\n            result.append(processed)\n    return result"
+    }
+  ],
+  "temperature": 0.6,
+  "max_tokens": 1500
+}
+
+###
+# Example 10: Streaming Response
+# Scenario: OpenCode requests streaming for real-time display
+# Profile: sibyl/code-balanced with streaming enabled
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-balanced",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain the SOLID principles in software engineering with examples"
+    }
+  ],
+  "stream": true,
+  "temperature": 0.7,
+  "max_tokens": 2000
+}
+
+###
+# Example 11: Code Documentation Generation
+# Scenario: User requests docstring generation
+# Profile: sibyl/code-fast for quick documentation
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-fast",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Generate Python docstrings in Google style for the provided function."
+    },
+    {
+      "role": "user",
+      "content": "def calculate_fibonacci(n, memo=None):\n    if memo is None:\n        memo = {}\n    if n in memo:\n        return memo[n]\n    if n <= 1:\n        return n\n    memo[n] = calculate_fibonacci(n-1, memo) + calculate_fibonacci(n-2, memo)\n    return memo[n]"
+    }
+  ],
+  "temperature": 0.3,
+  "max_tokens": 500
+}
+
+###
+# Example 12: Error Handling Enhancement
+# Scenario: Add proper error handling to code
+# Profile: sibyl/code-balanced for robust error handling
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-balanced",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Add comprehensive error handling to the provided code. Use try-except blocks and proper logging."
+    },
+    {
+      "role": "user",
+      "content": "def fetch_user_data(user_id):\n    response = requests.get(f'https://api.example.com/users/{user_id}')\n    data = response.json()\n    return data['username']"
+    }
+  ],
+  "temperature": 0.5,
+  "max_tokens": 1000
+}
+
+###
+# Example 13: Code Translation (Python to TypeScript)
+# Scenario: Translate code between languages
+# Profile: sibyl/code-balanced for accurate translation
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-balanced",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate the provided Python code to TypeScript. Maintain the same logic and structure."
+    },
+    {
+      "role": "user",
+      "content": "from dataclasses import dataclass\nfrom typing import List\n\n@dataclass\nclass User:\n    id: int\n    name: str\n    email: str\n    roles: List[str]\n\n    def has_role(self, role: str) -> bool:\n        return role in self.roles"
+    }
+  ],
+  "temperature": 0.4,
+  "max_tokens": 1000
+}
+
+###
+# Example 14: Performance Optimization
+# Scenario: Request performance improvements
+# Profile: sibyl/code-think for detailed analysis
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-think",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Analyze the code for performance bottlenecks and suggest optimizations. Explain the time complexity changes."
+    },
+    {
+      "role": "user",
+      "content": "def find_duplicates(data):\n    duplicates = []\n    for i in range(len(data)):\n        for j in range(i+1, len(data)):\n            if data[i] == data[j] and data[i] not in duplicates:\n                duplicates.append(data[i])\n    return duplicates"
+    }
+  ],
+  "temperature": 0.6,
+  "max_tokens": 1500
+}
+
+###
+# Example 15: Code Review Request
+# Scenario: Comprehensive code review
+# Profile: sibyl/code-think for thorough analysis
+
+POST {{baseUrl}}/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "sibyl/code-think",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Perform a comprehensive code review. Check for bugs, security issues, performance problems, and style violations."
+    },
+    {
+      "role": "user",
+      "content": "class UserManager:\n    users = {}\n    \n    def add_user(self, username, password):\n        self.users[username] = password\n    \n    def authenticate(self, username, password):\n        if username in self.users:\n            if self.users[username] == password:\n                return True\n        return False\n    \n    def get_all_users(self):\n        return self.users"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 2000
+}
+
+###
+# Health Check
+# Verify Sibyl server is running
+
+GET http://localhost:8000/health
+Content-Type: application/json
+
+###
+# List Available Models
+# Check available routing profiles and models
+
+GET {{baseUrl}}/models
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}

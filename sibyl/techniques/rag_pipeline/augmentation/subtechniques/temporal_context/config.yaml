@@ -1,0 +1,4 @@
+subtechnique: temporal_context
+description: "Temporal context injection"
+default_implementation: timestamp
+enabled: true

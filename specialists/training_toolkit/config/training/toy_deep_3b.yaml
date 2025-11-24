@@ -1,0 +1,129 @@
+# Deep training configuration for 3B parameter model
+# Optimized for Apple Silicon M1 with 32GB RAM
+# Expected training time: ~2-4 hours on M1
+
+model:
+  # Base model from HuggingFace
+  base_model: "Qwen/Qwen2.5-3B-Instruct"
+
+  # LoRA parameters - slightly higher for better quality
+  lora_rank: 32
+  lora_alpha: 64
+  lora_dropout: 0.05
+
+  # Modules to apply LoRA to
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+  # Quantization essential for 3B on 32GB RAM
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true  # Extra memory savings
+
+training:
+  # Training hyperparameters
+  num_epochs: 5
+  batch_size: 2  # Smaller batch for 3B model
+  gradient_accumulation_steps: 8  # Effective batch size = 16
+
+  # Learning rate - slightly lower for larger model
+  learning_rate: 1.5e-4
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  warmup_steps: 20
+
+  # Optimization
+  optimizer: "adamw_8bit"
+  weight_decay: 0.01
+  max_grad_norm: 0.5
+
+  # Memory optimization (critical for 3B)
+  gradient_checkpointing: true
+  max_seq_length: 2048
+  packing: false
+
+  # Logging and saving
+  logging_steps: 10
+  save_steps: 100
+  save_total_limit: 2  # Keep fewer checkpoints to save disk
+  eval_steps: 50
+  evaluation_strategy: "steps"
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+
+  # Mixed precision
+  fp16: false
+  bf16: true  # Better for M1
+
+  # Other settings
+  seed: 42
+  output_dir: "outputs/toy_deep_3b"
+
+data:
+  # Data paths (relative to training_toolkit/)
+  train_path: "data/toy_assistant/train.jsonl"
+  dev_path: "data/toy_assistant/dev.jsonl"
+  test_path: "data/toy_assistant/test.jsonl"
+
+  # Data processing
+  prompt_template: |
+    ### Instruction:
+    {prompt}
+
+    ### Response:
+    {completion}
+
+  # Dataset parameters
+  dataset_text_field: "text"
+  max_prompt_length: 512
+  max_completion_length: 1536
+
+  # Data augmentation (optional)
+  use_augmentation: false
+  augmentation_factor: 0.3
+
+hardware:
+  # Hardware-specific settings
+  device: "mps"  # Metal Performance Shaders for M1
+  num_workers: 2  # Fewer workers for larger model
+  pin_memory: false
+
+  # M1-specific optimizations
+  use_mps_fallback: true
+  enable_metal_acceleration: true
+
+  # Memory management
+  empty_cache_steps: 10  # Clear cache regularly
+  max_memory_allocated: "28GB"  # Leave headroom for OS
+
+advanced:
+  # Advanced training options
+  use_flash_attention: false  # Not available on M1
+  use_gradient_accumulation: true
+
+  # Early stopping
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.001
+
+  # Regularization
+  label_smoothing_factor: 0.1
+
+notes:
+  description: "High-quality training for production specialists"
+  expected_time_m1: "2-4 hours"
+  expected_time_gpu: "30-60 minutes (on A100)"
+  memory_usage: "~24-28GB on M1"
+  use_case: "Production deployment, complex domains, higher quality requirements"
+  tradeoffs: "Longer training time but better performance"
+  recommendations:
+    - "Consider training on cloud GPU for faster iterations"
+    - "Use toy_fast_1_5b.yaml first to validate pipeline"
+    - "Monitor memory usage with Activity Monitor"
+    - "Close other applications during training"

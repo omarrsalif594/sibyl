@@ -1,0 +1,163 @@
+name: northwind-analytics
+version: "1.0"
+description: "Northwind Analytics - BI/Analytics SaaS demonstration workspace"
+
+# This workspace demonstrates a realistic analytics SaaS platform that combines:
+# - Markdown documentation (product docs, KPI definitions, user guides)
+# - SQL data warehouse (customers, subscriptions, revenue metrics)
+# - Vector store for semantic search over documentation
+# - RAG pipeline for answering business questions with context
+
+providers:
+  # Document Sources - Product documentation in Markdown
+  document_sources:
+    product_docs:
+      type: filesystem_markdown
+      config:
+        root: ./data/docs
+        pattern: "**/*.md"
+      description: "Product documentation, KPI definitions, and user guides"
+
+  # SQL Database - Data warehouse with SaaS metrics
+  sql:
+    analytics_warehouse:
+      type: sqlite
+      config:
+        path: ./data/sql/northwind_analytics.db
+      description: "Data warehouse with customers, subscriptions, revenue, and usage data"
+
+  # Vector Store - DuckDB for document embeddings
+  vector_store:
+    docs_index:
+      kind: duckdb
+      dsn: "duckdb://./data/vectors/doc_embeddings.duckdb"
+      collection_name: product_docs
+      distance_metric: cosine
+      description: "Vector index for semantic search over documentation"
+
+  # LLM Provider - For response generation and summarization
+  llm:
+    default:
+      provider: local
+      model: echo  # In production: anthropic/claude-3-5-sonnet-20241022
+      description: "Primary LLM for analysis and generation"
+
+    fast:
+      provider: local
+      model: echo  # In production: openai/gpt-3.5-turbo
+      description: "Fast LLM for simple queries and formatting"
+
+  # Embeddings Provider - For document vectorization
+  embeddings:
+    default:
+      provider: local_sentence_transformer
+      model: all-MiniLM-L6-v2
+      dimension: 384
+      description: "Embedding model for semantic search"
+
+  # MCP Providers (optional - for extended capabilities)
+  mcp:
+    # Uncomment to enable MCP integrations
+    # nlp:
+    #   server_name: mcp-nlp
+    #   capabilities: [entity_extraction, sentiment_analysis]
+    #
+    # memory:
+    #   server_name: mcp-memory
+    #   capabilities: [store_context, retrieve_context]
+
+# Technique Shops - Collections of techniques for specific use cases
+
+shops:
+  # RAG Shop - For documentation retrieval and context building
+  rag_shop:
+    description: "RAG pipeline techniques for querying documentation"
+    techniques:
+      # Chunking for document processing
+      chunker: "rag_pipeline.chunking:markdown_chunking"
+
+      # Embedding generation
+      embedder: "rag_pipeline.embedding:sentence_transformer"
+
+      # Vector search
+      searcher: "rag_pipeline.search:vector_search"
+
+      # Retrieval
+      retriever: "rag_pipeline.retrieval:semantic_search"
+
+      # Context augmentation
+      augmenter: "rag_pipeline.augmentation:citation_injection"
+
+      # Reranking
+      reranker: "rag_pipeline.reranking:cross_encoder"
+
+    config:
+      chunk_size: 800
+      chunk_overlap: 100
+      top_k: 5
+      min_relevance_score: 0.6
+
+  # Analytics Shop - For data analysis and SQL query generation
+  analytics_shop:
+    description: "Techniques for analyzing business data"
+    techniques:
+      # Query processing
+      query_processor: "rag_pipeline.query_processing:query_expansion"
+
+      # Generation with context
+      generator: "ai_generation.generation:chain_of_thought"
+
+      # Validation
+      validator: "ai_generation.validation:quality_scoring"
+
+      # Formatting
+      formatter: "ai_generation.formatting:category_naming"
+
+    config:
+      temperature: 0.1  # Low temperature for factual analysis
+      max_tokens: 2000
+      include_citations: true
+
+  # Summarization Shop - For creating concise summaries
+  summarization_shop:
+    description: "Techniques for summarizing complex information"
+    techniques:
+      generator: "ai_generation.generation:basic_generation"
+      validator: "ai_generation.validation:quality_scoring"
+    config:
+      temperature: 0.3
+      max_tokens: 500
+
+# Pipeline Definitions (referenced in separate pipelines.yaml)
+# Pipelines are defined in ./config/pipelines.yaml for better organization
+
+# Global Configuration
+config:
+  # Logging
+  log_level: INFO
+  log_format: structured
+
+  # Performance
+  timeout_s: 300  # 5 minutes default timeout
+  max_retries: 3
+
+  # Cache settings (for development)
+  enable_cache: true
+  cache_ttl_s: 3600  # 1 hour
+
+  # Security
+  enable_sql_sanitization: true  # Always sanitize SQL inputs
+  max_sql_result_rows: 10000  # Limit result set size
+
+# Metadata
+metadata:
+  company: Northwind Analytics
+  environment: demo
+  use_case: business_intelligence
+  created_at: "2024-10-15"
+  tags:
+    - saas
+    - analytics
+    - bi
+    - rag
+    - sql

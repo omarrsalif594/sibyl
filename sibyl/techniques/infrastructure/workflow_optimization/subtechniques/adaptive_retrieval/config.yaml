@@ -1,0 +1,4 @@
+subtechnique: adaptive_retrieval
+description: "Adaptive retrieval strategies"
+default_implementation: dynamic_strategy
+enabled: true

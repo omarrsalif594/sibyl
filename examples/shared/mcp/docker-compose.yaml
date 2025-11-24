@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Qdrant - Vector Database for RAG
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: sibyl-qdrant
+    ports:
+      - "6333:6333"  # HTTP API
+      - "6334:6334"  # gRPC API
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT_LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Neo4j - Graph Database for Graphiti
+  neo4j:
+    image: neo4j:5.13-community
+    container_name: sibyl-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    environment:
+      - NEO4J_AUTH=neo4j/sibyl-examples-password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "sibyl-examples-password", "RETURN 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # PostgreSQL - Optional Relational Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: sibyl-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=sibyl
+      - POSTGRES_PASSWORD=sibyl-examples-password
+      - POSTGRES_DB=sibyl_examples
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sibyl"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  qdrant_storage:
+    driver: local
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  postgres_data:
+    driver: local

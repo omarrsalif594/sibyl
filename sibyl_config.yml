@@ -1,0 +1,170 @@
+version: 0.1.0
+techniques:
+  session_management:
+    enabled: true
+    subtechnique: rotation_strategy
+    implementation: token_based
+    config:
+      token_threshold: 0.7
+      enable_rotation: true
+      model_adaptive: true
+      summarization:
+        subtechnique: summarization
+        implementation: llm_summarize
+        config:
+          threshold_pct: 60.0
+          strategy: summarize
+          model: anthropic
+  storage:
+    enabled: true
+    subtechnique: relational_db
+    implementation: duckdb
+    config:
+      # Use environment variable for secure database path. Default is for development only.
+      # Production: Set SIBYL_DB_PATH to /var/lib/sibyl/state/sibyl_state.duckdb with proper permissions (600/640)
+      db_path: ${SIBYL_DB_PATH:-/tmp/sibyl_state.duckdb}
+      enable_wal: true
+      memory_limit: 2GB
+      threads: 4
+      connection_pool_size: 5
+  validation:
+    enabled: true
+    subtechnique: multi_validator
+    implementation: default
+    config:
+      max_retries: 2
+      retry_on_yellow: false
+      timeout_seconds: 10
+      validators:
+        syntax:
+          enabled: true
+          subtechnique: syntax_validation
+          implementation: ast_parser
+        anti_pattern:
+          enabled: true
+          subtechnique: pattern_validation
+          implementation: rule_based
+        type:
+          enabled: true
+          subtechnique: type_validation
+          implementation: mypy
+        schema:
+          enabled: false
+          subtechnique: schema_validation
+          implementation: jsonschema
+providers:
+  version: 0.1.0
+  default_llm_provider: anthropic
+  default_embedding_provider: sentence-transformer
+  llm:
+    anthropic:
+      type: api
+      enabled: true
+      connection:
+        api_key_env: ANTHROPIC_API_KEY
+        timeout_seconds: 60
+        max_retries: 3
+      capabilities:
+        supports_structured: true
+        supports_seed: false
+        supports_streaming: true
+        supports_tools: true
+        max_tokens_limit: 200000
+        token_counting_method: claude-tokenizer
+      rate_limits:
+        requests_per_minute: 50
+        tokens_per_minute: 100000
+        concurrent_requests: 5
+      models:
+      - name: claude-opus-4
+        cost_per_1k_input: 0.015
+        cost_per_1k_output: 0.075
+        max_tokens: 200000
+        quality_score: 10
+        aliases: []
+      - name: claude-sonnet-4-5
+        cost_per_1k_input: 0.003
+        cost_per_1k_output: 0.015
+        max_tokens: 200000
+        quality_score: 9
+        aliases:
+        - claude-sonnet-4-5-20250929
+      - name: claude-haiku-4
+        cost_per_1k_input: 0.0008
+        cost_per_1k_output: 0.004
+        max_tokens: 200000
+        quality_score: 7
+        aliases: []
+    openai:
+      type: api
+      enabled: true
+      connection:
+        api_key_env: OPENAI_API_KEY
+        timeout_seconds: 60
+        max_retries: 3
+      capabilities:
+        supports_structured: true
+        supports_seed: true
+        supports_streaming: true
+        supports_tools: true
+        max_tokens_limit: 128000
+        token_counting_method: tiktoken
+      rate_limits:
+        requests_per_minute: 60
+        tokens_per_minute: 150000
+        concurrent_requests: 10
+      models:
+      - name: gpt-4-turbo
+        cost_per_1k_input: 0.01
+        cost_per_1k_output: 0.03
+        max_tokens: 128000
+        quality_score: 8
+        aliases:
+        - gpt-4-turbo-preview
+      - name: gpt-3.5-turbo
+        cost_per_1k_input: 0.0005
+        cost_per_1k_output: 0.0015
+        max_tokens: 16000
+        quality_score: 6
+        aliases: []
+    ollama:
+      type: local
+      enabled: false
+      connection:
+        endpoint: http://localhost:11434
+        timeout_seconds: 120
+      capabilities:
+        supports_structured: false
+        supports_seed: true
+        supports_streaming: true
+        supports_tools: false
+        max_tokens_limit: 4096
+        token_counting_method: estimate
+      rate_limits:
+        concurrent_requests: 1
+      models:
+      - name: codellama:13b
+        cost_per_1k_input: 0.0
+        cost_per_1k_output: 0.0
+        max_tokens: 4096
+        quality_score: 5
+        aliases: []
+  embedding:
+    sentence-transformer:
+      type: local
+      enabled: true
+      connection:
+        model_name: all-MiniLM-L6-v2
+      capabilities:
+        embedding_dim: 384
+        max_tokens_limit: 512
+server:
+  http_host: 127.0.0.1
+  http_port: 8770
+  log_level: INFO
+  architecture_version: v2
+observability:
+  metrics_enabled: true
+  metrics_export_interval_seconds: 60
+  structured_logging: false
+  trace_sampling_rate: 0.1

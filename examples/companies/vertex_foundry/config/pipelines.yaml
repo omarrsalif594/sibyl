@@ -1,0 +1,405 @@
+# Vertex Foundry Pipeline Definitions
+# Demonstrates PollableJobHandle, SessionHandle, streaming, control flow
+
+pipelines:
+  # ============================================================================
+  # Pipeline 1: Hyperparameter Sweep with Job Polling & Streaming
+  # ============================================================================
+  hyperparameter_sweep:
+    name: "Hyperparameter Optimization Sweep"
+    description: "Plan and execute distributed hyperparameter search with job polling"
+    version: "1.0.0"
+
+    inputs:
+      budget_usd:
+        type: number
+        required: true
+        description: "Total budget in USD for the sweep"
+      param_space:
+        type: object
+        required: true
+        description: "Hyperparameter search space"
+        default:
+          learning_rate: [0.0001, 0.001, 0.01]
+          batch_size: [32, 64, 128]
+          dropout: [0.3, 0.5, 0.7]
+      target_metric:
+        type: string
+        default: "val_acc"
+        description: "Metric to optimize"
+
+    outputs:
+      best_hyperparameters:
+        type: object
+        description: "Best hyperparameter configuration found"
+      best_score:
+        type: number
+        description: "Best metric value achieved"
+      all_results:
+        type: array
+        description: "Results from all trials"
+      total_cost:
+        type: number
+        description: "Total cost incurred"
+
+    steps:
+      # Step 1: Use Solver MCP to plan optimal search grid
+      - name: plan_search_grid
+        technique: solver_optimization
+        mcp: solver
+        config:
+          optimization_type: "grid_search_with_budget"
+          objective: "maximize"
+          constraints:
+            max_budget_usd: "{{ inputs.budget_usd }}"
+            max_concurrent_jobs: 5
+        inputs:
+          search_space: "{{ inputs.param_space }}"
+          cost_model:
+            T4_hourly: 0.35
+            estimated_duration_hours: 2
+        outputs:
+          search_grid: "search_plan.grid"
+          estimated_cost: "search_plan.cost"
+          num_trials: "search_plan.num_trials"
+
+      # Step 2: Validate budget constraint
+      - name: validate_budget
+        technique: custom_validation
+        when: "{{ search_plan.cost > inputs.budget_usd }}"
+        action:
+          type: error
+          message: "Estimated cost ${{ search_plan.cost }} exceeds budget ${{ inputs.budget_usd }}"
+
+      # Step 3: Launch distributed training jobs via Conductor
+      - name: launch_training_jobs
+        technique: conductor_orchestration
+        mcp: conductor
+        config:
+          execution_mode: "distributed"
+          job_type: "training"
+          return_handle: true  # Returns PollableJobHandle
+        inputs:
+          job_configs: "{{ search_plan.grid }}"
+          training_script: "data/code/train_model.py"
+          base_config: "data/experiments/experiment_configs/exp_001_baseline.yaml"
+        outputs:
+          job_handle: "training_jobs.handle"  # PollableJobHandle
+          job_ids: "training_jobs.ids"
+
+      # Step 4: Poll jobs with automatic retry
+      - name: monitor_training_progress
+        technique: job_polling
+        config:
+          polling:
+            initial_delay_ms: 2000
+            max_delay_ms: 10000
+            backoff_multiplier: 1.5
+            max_attempts: 50
+          retry:
+            on_error: true
+            max_retries: 3
+            retry_delay_ms: 5000
+          streaming:
+            enabled: true
+            chunk_type: "progress_update"
+        inputs:
+          job_handle: "{{ training_jobs.handle }}"
+        outputs:
+          job_status: "jobs.status"
+          progress_stream: "jobs.progress"  # Streaming output
+          completion_time: "jobs.completed_at"
+
+      # Step 5: Stream progress updates to user
+      - name: stream_results
+        technique: result_streaming
+        config:
+          stream_format: "json_lines"
+          include_partial: true
+        inputs:
+          progress_stream: "{{ jobs.progress }}"
+        outputs:
+          streamed_updates: "stream.updates"
+
+      # Step 6: Retry failed jobs (control flow feature)
+      - name: retry_failed_jobs
+        technique: conductor_orchestration
+        when: "{{ jobs.status.failed_count > 0 }}"
+        retry:
+          max_attempts: 2
+          when: "{{ error.type == 'transient' }}"
+        mcp: conductor
+        inputs:
+          job_configs: "{{ jobs.status.failed_jobs }}"
+          training_script: "data/code/train_model.py"
+        outputs:
+          retry_results: "retry.results"
+
+      # Step 7: Aggregate and rank results
+      - name: aggregate_results
+        technique: result_aggregation
+        inputs:
+          completed_jobs: "{{ jobs.status.completed }}"
+          retry_jobs: "{{ retry.results }}"
+          target_metric: "{{ inputs.target_metric }}"
+        outputs:
+          all_results: "aggregated.results"
+          ranked_results: "aggregated.ranked"
+
+      # Step 8: Select best hyperparameters
+      - name: select_best
+        technique: best_selection
+        inputs:
+          ranked_results: "{{ aggregated.ranked }}"
+          selection_criteria: "highest_{{ inputs.target_metric }}"
+        outputs:
+          best_hyperparameters: "best.params"
+          best_score: "best.score"
+          best_run_id: "best.run_id"
+
+      # Step 9: Calculate total cost
+      - name: calculate_cost
+        technique: cost_calculation
+        inputs:
+          completed_jobs: "{{ jobs.status.completed }}"
+          retry_jobs: "{{ retry.results }}"
+        outputs:
+          total_cost: "cost.total"
+          cost_breakdown: "cost.breakdown"
+
+  # ============================================================================
+  # Pipeline 2: Diagnose Failing Training Job with SessionHandle
+  # ============================================================================
+  diagnose_failure:
+    name: "Training Failure Diagnosis"
+    description: "Analyze failed training jobs using code analysis and multi-turn reasoning"
+    version: "1.0.0"
+
+    inputs:
+      run_id:
+        type: string
+        required: true
+        description: "ID of the failed training run"
+      include_code_analysis:
+        type: boolean
+        default: true
+        description: "Whether to perform deep code analysis"
+
+    outputs:
+      diagnosis:
+        type: object
+        description: "Detailed diagnostic report"
+      recommendations:
+        type: array
+        description: "List of recommended fixes"
+      root_cause:
+        type: string
+        description: "Identified root cause"
+
+    steps:
+      # Step 1: Load run metadata and logs
+      - name: load_run_data
+        technique: data_loading
+        inputs:
+          run_id: "{{ inputs.run_id }}"
+          sources:
+            - "data/runs/{{ inputs.run_id }}.json"
+            - "data/experiments/logs/{{ inputs.run_id }}_error.log"
+        outputs:
+          run_metadata: "run.metadata"
+          error_log: "run.error_log"
+          failure_step: "run.failure_step"
+          error_message: "run.error_message"
+
+      # Step 2: Extract error patterns from logs
+      - name: extract_error_patterns
+        technique: log_analysis
+        inputs:
+          error_log: "{{ run.error_log }}"
+          context_lines: 50
+        outputs:
+          error_patterns: "errors.patterns"
+          error_context: "errors.context"
+          stack_trace: "errors.stack_trace"
+
+      # Step 3: Create SessionHandle for multi-turn code analysis
+      - name: initialize_analysis_session
+        technique: session_creation
+        mcp: code_analyzer
+        config:
+          session_type: "persistent"
+          context_retention: true
+          max_turns: 10
+        outputs:
+          session_handle: "analysis.session"  # SessionHandle
+
+      # Step 4: Analyze training script for bugs
+      - name: analyze_training_code
+        technique: code_analysis
+        when: "{{ inputs.include_code_analysis }}"
+        mcp: code_analyzer
+        config:
+          analysis_type: "bug_detection"
+          focus_areas:
+            - loss_function
+            - optimizer_config
+            - gradient_handling
+        inputs:
+          session_handle: "{{ analysis.session }}"
+          code_files:
+            - "data/code/train_model.py"
+            - "data/code/model.py"
+          error_context: "{{ errors.context }}"
+        outputs:
+          code_issues: "analysis.issues"
+          suspicious_patterns: "analysis.patterns"
+
+      # Step 5: Cross-reference errors with code issues
+      - name: correlate_errors_with_code
+        technique: pattern_matching
+        mcp: code_analyzer
+        inputs:
+          session_handle: "{{ analysis.session }}"  # Reuse session
+          error_patterns: "{{ errors.patterns }}"
+          code_issues: "{{ analysis.issues }}"
+          run_hyperparameters: "{{ run.metadata.hyperparameters }}"
+        outputs:
+          correlations: "correlation.results"
+          likely_causes: "correlation.causes"
+
+      # Step 6: Multi-turn reasoning to identify root cause
+      - name: identify_root_cause
+        technique: iterative_reasoning
+        mcp: code_analyzer
+        config:
+          reasoning_depth: 3
+          chain_of_thought: true
+        inputs:
+          session_handle: "{{ analysis.session }}"  # Maintain context
+          correlations: "{{ correlation.results }}"
+          likely_causes: "{{ correlation.causes }}"
+          domain_knowledge: "ml_training_best_practices"
+        outputs:
+          root_cause: "diagnosis.root_cause"
+          confidence: "diagnosis.confidence"
+          reasoning_chain: "diagnosis.reasoning"
+
+      # Step 7: Generate recommendations
+      - name: generate_recommendations
+        technique: recommendation_generation
+        mcp: code_analyzer
+        inputs:
+          session_handle: "{{ analysis.session }}"
+          root_cause: "{{ diagnosis.root_cause }}"
+          code_issues: "{{ analysis.issues }}"
+        outputs:
+          recommendations: "diagnosis.recommendations"
+          code_fixes: "diagnosis.fixes"
+
+      # Step 8: Create diagnostic report
+      - name: create_report
+        technique: report_generation
+        inputs:
+          run_metadata: "{{ run.metadata }}"
+          error_patterns: "{{ errors.patterns }}"
+          root_cause: "{{ diagnosis.root_cause }}"
+          recommendations: "{{ diagnosis.recommendations }}"
+          code_fixes: "{{ diagnosis.fixes }}"
+          confidence: "{{ diagnosis.confidence }}"
+        outputs:
+          diagnosis: "report.diagnosis"
+
+      # Step 9: Close analysis session
+      - name: cleanup_session
+        technique: session_cleanup
+        inputs:
+          session_handle: "{{ analysis.session }}"
+
+  # ============================================================================
+  # Pipeline 3: GPU Resource Optimization (Optional)
+  # ============================================================================
+  optimize_resources:
+    name: "GPU Resource Allocation Optimizer"
+    description: "Optimize GPU allocation across team experiments using constraint solving"
+    version: "1.0.0"
+
+    inputs:
+      pending_experiments:
+        type: array
+        required: true
+        description: "List of experiments waiting for resources"
+      available_gpus:
+        type: object
+        required: true
+        description: "Available GPU resources by type"
+      optimization_objective:
+        type: string
+        default: "maximize_throughput"
+        enum: ["maximize_throughput", "minimize_cost", "balance"]
+
+    outputs:
+      allocation_plan:
+        type: object
+        description: "Optimal GPU allocation plan"
+      expected_completion_time:
+        type: string
+        description: "Expected time for all experiments to complete"
+      cost_estimate:
+        type: number
+        description: "Estimated total cost"
+
+    steps:
+      # Step 1: Load experiment requirements
+      - name: load_experiment_requirements
+        technique: data_loading
+        inputs:
+          experiments: "{{ inputs.pending_experiments }}"
+        outputs:
+          requirements: "experiments.requirements"
+          priorities: "experiments.priorities"
+
+      # Step 2: Formulate optimization problem
+      - name: formulate_optimization
+        technique: constraint_formulation
+        inputs:
+          requirements: "{{ experiments.requirements }}"
+          available_resources: "{{ inputs.available_gpus }}"
+          objective: "{{ inputs.optimization_objective }}"
+        outputs:
+          optimization_problem: "solver.problem"
+          constraints: "solver.constraints"
+
+      # Step 3: Solve allocation problem
+      - name: solve_allocation
+        technique: constraint_solving
+        mcp: solver
+        config:
+          solver_type: "mixed_integer_programming"
+          timeout_seconds: 60
+        inputs:
+          problem: "{{ solver.problem }}"
+          constraints: "{{ solver.constraints }}"
+        outputs:
+          solution: "solver.solution"
+          optimality_gap: "solver.gap"
+
+      # Step 4: Generate allocation plan
+      - name: create_allocation_plan
+        technique: plan_generation
+        inputs:
+          solution: "{{ solver.solution }}"
+          experiments: "{{ inputs.pending_experiments }}"
+          available_gpus: "{{ inputs.available_gpus }}"
+        outputs:
+          allocation_plan: "plan.allocation"
+          schedule: "plan.schedule"
+
+      # Step 5: Estimate completion time and cost
+      - name: estimate_metrics
+        technique: metric_estimation
+        inputs:
+          allocation_plan: "{{ plan.allocation }}"
+          schedule: "{{ plan.schedule }}"
+        outputs:
+          expected_completion_time: "estimate.completion_time"
+          cost_estimate: "estimate.cost"

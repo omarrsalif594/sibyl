@@ -1,0 +1,4 @@
+subtechnique: chain_of_thought
+description: "Chain of thought reasoning"
+default_implementation: step_by_step
+enabled: true

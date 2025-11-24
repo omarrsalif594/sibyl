@@ -1,0 +1,596 @@
+# Tier 3 Production-Style MCP Integration Workspace
+# Long-running, stateful, and workflow-oriented MCPs
+#
+# This workspace integrates 5 production-grade MCPs that emphasize:
+# - Job submission and polling for long-running operations
+# - External state management and semantic memory
+# - Workflow orchestration with DAG execution
+# - Time-series data handling and forecasting
+# - Comparison with internal Sibyl providers
+#
+# MCPs: Deep Code Reasoning, RAG Memory, Qdrant, Conductor, Chronulus
+#
+# CRITICAL GAPS TO DOCUMENT:
+# - Streaming tool responses for multi-turn conversations
+# - Job status polling abstractions for workflows
+# - External vs internal provider tradeoffs
+# - Time-series artifact representation
+# - External state handle management
+
+name: "tier3-production-mcps"
+description: "Production-style MCPs with long-running jobs, external state, and workflow orchestration"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM provider for generation tasks
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    # Cheaper model for evaluation tasks
+    evaluator:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.3
+
+  # Embeddings provider for semantic operations
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Internal vector store for comparison with Qdrant MCP
+  vector_store:
+    internal_qdrant:
+      kind: "qdrant"
+      url: "http://localhost:6333"
+      collection_name: "internal_comparison"
+      distance_metric: "cosine"
+
+    duckdb_store:
+      kind: "duckdb"
+      dsn: "duckdb://./data/tier3_vectors.duckdb"
+      collection_name: "tier3_documents"
+      distance_metric: "cosine"
+
+  # MCP Providers
+  mcp:
+    # 1. Deep Code Reasoning - Multi-model code analysis with conversation state
+    deep_code_reasoning:
+      transport: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "@haasonsaas/deep-code-reasoning-mcp"
+      env:
+        GEMINI_API_KEY: "${GEMINI_API_KEY}"
+        LOG_LEVEL: "INFO"
+      tools:
+        # Conversational analysis tools (multi-turn, session-based)
+        - start_conversation
+        - continue_conversation
+        - finalize_conversation
+        - get_conversation_status
+        # Traditional analysis tools (single-shot)
+        - escalate_analysis
+        - trace_execution_path
+        - cross_system_impact
+        - performance_bottleneck
+        - hypothesis_test
+      timeout_s: 180
+
+    # 2. RAG Memory - Semantic memory with hybrid search and knowledge graph
+    rag_memory:
+      transport: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "rag-memory-mcp"
+      env:
+        MEMORY_DB_PATH: "./data/rag_memory.db"
+        OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      tools:
+        # Document management
+        - storeDocument
+        - chunkDocument
+        - embedChunks
+        - extractTerms
+        - linkEntitiesToDocument
+        - deleteDocuments
+        - listDocuments
+        # Knowledge graph operations
+        - createEntities
+        - createRelations
+        - addObservations
+        - deleteEntities
+        - deleteRelations
+        - deleteObservations
+        # Search & retrieval
+        - hybridSearch
+        - searchNodes
+        - openNodes
+        - readGraph
+        - getKnowledgeGraphStats
+      timeout_s: 90
+
+    # 3. Qdrant MCP - Vector search as MCP (compare with internal QdrantVectorStore)
+    qdrant_mcp:
+      transport: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "@qdrant/mcp-server-qdrant"
+      env:
+        QDRANT_URL: "http://localhost:6333"
+        COLLECTION_NAME: "mcp_collection"
+        EMBEDDING_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+      tools:
+        - qdrant-store
+        - qdrant-find
+      timeout_s: 60
+
+    # 4. Conductor - Workflow DAG orchestration (job submission and polling)
+    conductor:
+      transport: stdio
+      command: "python"
+      args:
+        - "-m"
+        - "conductor_mcp.server"
+      env:
+        CONDUCTOR_SERVER_URL: "${CONDUCTOR_SERVER_URL}"
+        CONDUCTOR_AUTH_KEY: "${CONDUCTOR_AUTH_KEY}"
+        CONDUCTOR_AUTH_SECRET: "${CONDUCTOR_AUTH_SECRET}"
+      tools:
+        # Workflow creation and management
+        - create_workflow
+        - update_workflow
+        - delete_workflow
+        - list_workflows
+        # Workflow execution
+        - start_workflow
+        - pause_workflow
+        - resume_workflow
+        - terminate_workflow
+        # Status and monitoring (polling)
+        - get_workflow_status
+        - get_workflow_execution
+        - list_running_workflows
+        # Analysis
+        - analyze_workflow_performance
+      timeout_s: 300
+
+    # 5. Chronulus - Time-series forecasting with artifact representation
+    chronulus:
+      transport: stdio
+      command: "python"
+      args:
+        - "-m"
+        - "chronulus_mcp"
+      env:
+        CHRONULUS_API_KEY: "${CHRONULUS_API_KEY}"
+      tools:
+        - create_forecast
+        - get_forecast_status
+        - download_forecast_data
+        - visualize_forecast
+        - explain_forecast
+      timeout_s: 120
+
+# Shop Configurations
+shops:
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      embedder: "rag_pipeline.embedding:default"
+      indexer: "rag_pipeline.indexing:default"
+    config:
+      chunk_size: 1000
+      chunk_overlap: 200
+      top_k: 10
+
+  infrastructure:
+    techniques:
+      evaluator: "infrastructure.evaluation:rag_metrics"
+      logger: "infrastructure.logging:default"
+      monitor: "infrastructure.monitoring:default"
+    config:
+      log_level: "INFO"
+
+# Pipeline Configurations
+pipelines:
+  # Pipeline 1: Multi-turn code analysis with Deep Code Reasoning
+  # GAP: Streaming conversation responses, session state management
+  deep_code_analysis_session:
+    shop: infrastructure
+    entrypoint: "code_analysis.run"
+    description: "Multi-turn code analysis with session-based conversation tracking"
+    timeout_s: 300
+    steps:
+      # Step 1: Start analysis conversation with code context
+      - shop: mcp
+        provider: deep_code_reasoning
+        tool: start_conversation
+        params:
+          code_scope:
+            files: ["src/main.py", "src/utils.py"]
+            entry_points: ["main", "process_data"]
+          analysis_type: "execution_trace"
+          context: "{{ input.problem_description }}"
+        timeout_s: 60
+
+      # GAP: No way to stream conversation updates as they happen
+      # Currently: Must poll get_conversation_status manually
+
+      # Step 2: Poll conversation status (GAP: Should be automatic)
+      - shop: mcp
+        provider: deep_code_reasoning
+        tool: get_conversation_status
+        params:
+          session_id: "{{ context.session_id }}"
+        timeout_s: 10
+
+      # Step 3: Continue conversation with additional context
+      - shop: mcp
+        provider: deep_code_reasoning
+        tool: continue_conversation
+        params:
+          session_id: "{{ context.session_id }}"
+          message: "{{ input.follow_up_question }}"
+          enrich_code_snippets: true
+        timeout_s: 60
+
+      # Step 4: Finalize and extract structured findings
+      - shop: mcp
+        provider: deep_code_reasoning
+        tool: finalize_conversation
+        params:
+          session_id: "{{ context.session_id }}"
+          output_format: "actionable"
+        timeout_s: 30
+
+  # Pipeline 2: External semantic memory with RAG Memory MCP
+  # GAP: External state handle management, memory persistence across sessions
+  semantic_memory_rag:
+    shop: rag
+    entrypoint: "memory_rag.run"
+    description: "RAG with external semantic memory and knowledge graph"
+    timeout_s: 180
+    steps:
+      # Step 1: Store document in external memory
+      - shop: mcp
+        provider: rag_memory
+        tool: storeDocument
+        params:
+          content: "{{ input.document_content }}"
+          metadata:
+            source: "{{ input.source }}"
+            timestamp: "{{ input.timestamp }}"
+        timeout_s: 30
+
+      # Step 2: Chunk and embed (external processing)
+      - shop: mcp
+        provider: rag_memory
+        tool: chunkDocument
+        params:
+          document_id: "{{ context.document_id }}"
+          chunk_size: 500
+          chunk_overlap: 50
+        timeout_s: 20
+
+      - shop: mcp
+        provider: rag_memory
+        tool: embedChunks
+        params:
+          document_id: "{{ context.document_id }}"
+        timeout_s: 40
+
+      # Step 3: Extract entities and build knowledge graph
+      - shop: mcp
+        provider: rag_memory
+        tool: extractTerms
+        params:
+          document_id: "{{ context.document_id }}"
+        timeout_s: 20
+
+      - shop: mcp
+        provider: rag_memory
+        tool: linkEntitiesToDocument
+        params:
+          document_id: "{{ context.document_id }}"
+          entity_ids: "{{ context.extracted_entity_ids }}"
+        timeout_s: 10
+
+      # Step 4: Hybrid search (semantic + graph traversal)
+      # GAP: No way to represent external memory handles in Sibyl artifacts
+      - shop: mcp
+        provider: rag_memory
+        tool: hybridSearch
+        params:
+          query: "{{ input.query }}"
+          top_k: 10
+          use_graph_traversal: true
+        timeout_s: 30
+
+  # Pipeline 3: MCP vs Internal Provider Comparison (Qdrant)
+  # GAP: No abstraction for comparing external MCP vs internal provider
+  qdrant_comparison:
+    shop: rag
+    entrypoint: "qdrant_compare.run"
+    description: "Compare Qdrant MCP with internal QdrantVectorStore provider"
+    timeout_s: 120
+    steps:
+      # Test 1: Store via MCP
+      - shop: mcp
+        provider: qdrant_mcp
+        tool: qdrant-store
+        params:
+          text: "{{ input.test_document }}"
+          metadata:
+            source: "mcp_test"
+            index: 1
+        timeout_s: 15
+
+      # Test 2: Search via MCP
+      - shop: mcp
+        provider: qdrant_mcp
+        tool: qdrant-find
+        params:
+          query: "{{ input.test_query }}"
+          collection: "mcp_collection"
+        timeout_s: 15
+
+      # Test 3: Store via internal provider (for comparison)
+      # GAP: No way to run parallel A/B tests with both providers
+      - use: rag.indexer
+        config:
+          documents: ["{{ input.test_document }}"]
+          collection_name: "internal_comparison"
+
+      # Test 4: Search via internal provider
+      - use: rag.retriever
+        config:
+          query: "{{ input.test_query }}"
+          collection_name: "internal_comparison"
+          top_k: 10
+
+      # GAP: No built-in comparison/diff tool for provider results
+
+  # Pipeline 4: Workflow orchestration with job polling
+  # GAP: No job polling abstraction, no workflow state visualization
+  conductor_workflow_dag:
+    shop: infrastructure
+    entrypoint: "workflow.run"
+    description: "DAG workflow with job submission and status polling"
+    timeout_s: 600
+    budget:
+      max_cost_usd: 5.0
+    steps:
+      # Step 1: Create workflow definition
+      - shop: mcp
+        provider: conductor
+        tool: create_workflow
+        params:
+          name: "data_processing_dag"
+          description: "Multi-stage data processing workflow"
+          workflow_definition:
+            tasks:
+              - name: "extract_data"
+                type: "http"
+                http_request:
+                  uri: "{{ input.data_source_url }}"
+                  method: "GET"
+              - name: "transform_data"
+                type: "simple"
+                depends_on: ["extract_data"]
+              - name: "load_data"
+                type: "http"
+                depends_on: ["transform_data"]
+                http_request:
+                  uri: "{{ input.data_sink_url }}"
+                  method: "POST"
+        timeout_s: 30
+
+      # Step 2: Start workflow execution (returns job ID)
+      - shop: mcp
+        provider: conductor
+        tool: start_workflow
+        params:
+          workflow_name: "data_processing_dag"
+          input_data: "{{ input.workflow_params }}"
+        timeout_s: 20
+
+      # Step 3: Poll workflow status (GAP: Should be automatic)
+      # GAP: No built-in polling loop with backoff/retry
+      - shop: mcp
+        provider: conductor
+        tool: get_workflow_status
+        params:
+          workflow_id: "{{ context.workflow_id }}"
+        timeout_s: 10
+
+      # GAP: Manual polling loop needed here
+      # Should wait and retry until workflow completes
+      # Current: Single poll, no wait/retry mechanism
+
+      # Step 4: Get final execution results
+      - shop: mcp
+        provider: conductor
+        tool: get_workflow_execution
+        params:
+          workflow_id: "{{ context.workflow_id }}"
+        timeout_s: 30
+
+      # Step 5: Analyze workflow performance
+      - shop: mcp
+        provider: conductor
+        tool: analyze_workflow_performance
+        params:
+          workflow_id: "{{ context.workflow_id }}"
+        timeout_s: 20
+
+  # Pipeline 5: Time-series forecasting with artifact representation
+  # GAP: No time-series artifact type, no DuckDB time-series storage
+  chronulus_forecasting:
+    shop: infrastructure
+    entrypoint: "forecast.run"
+    description: "Time-series forecasting with result visualization and storage"
+    timeout_s: 180
+    steps:
+      # Step 1: Create forecast from time-series data
+      - shop: mcp
+        provider: chronulus
+        tool: create_forecast
+        params:
+          time_series_data: "{{ input.time_series_csv }}"
+          forecast_horizon: 30
+          confidence_interval: 0.95
+          model_type: "auto"
+        timeout_s: 60
+
+      # Step 2: Poll forecast status (GAP: Long-running job polling)
+      - shop: mcp
+        provider: chronulus
+        tool: get_forecast_status
+        params:
+          forecast_id: "{{ context.forecast_id }}"
+        timeout_s: 10
+
+      # GAP: Need polling loop here until forecast completes
+
+      # Step 3: Download forecast data
+      # GAP: No standard time-series artifact representation
+      - shop: mcp
+        provider: chronulus
+        tool: download_forecast_data
+        params:
+          forecast_id: "{{ context.forecast_id }}"
+          format: "json"
+        timeout_s: 30
+
+      # Step 4: Generate visualization
+      - shop: mcp
+        provider: chronulus
+        tool: visualize_forecast
+        params:
+          forecast_id: "{{ context.forecast_id }}"
+          chart_type: "line_with_confidence"
+        timeout_s: 20
+
+      # Step 5: Get explanation for LLM consumption
+      - shop: mcp
+        provider: chronulus
+        tool: explain_forecast
+        params:
+          forecast_id: "{{ context.forecast_id }}"
+          detail_level: "comprehensive"
+        timeout_s: 15
+
+      # GAP: No way to store time-series data in DuckDB for querying
+      # GAP: No LLM-friendly formatting for time-series results
+
+  # Pipeline 6: Hybrid memory across internal and external storage
+  # GAP: No unified memory interface across providers
+  hybrid_memory_pipeline:
+    shop: rag
+    entrypoint: "hybrid_memory.run"
+    description: "Combine internal vector store with external memory MCP"
+    timeout_s: 150
+    steps:
+      # Store in internal vector store
+      - use: rag.indexer
+        config:
+          documents: "{{ input.documents }}"
+          collection_name: "internal_memory"
+
+      # Store in external RAG Memory MCP
+      - shop: mcp
+        provider: rag_memory
+        tool: storeDocument
+        params:
+          content: "{{ input.documents }}"
+          metadata:
+            source: "external_memory"
+
+      # Search both and merge results
+      # GAP: No built-in way to merge/deduplicate results from multiple sources
+      - use: rag.retriever
+        config:
+          query: "{{ input.query }}"
+          collection_name: "internal_memory"
+          top_k: 5
+
+      - shop: mcp
+        provider: rag_memory
+        tool: hybridSearch
+        params:
+          query: "{{ input.query }}"
+          top_k: 5
+
+  # Pipeline 7: Long-running analysis with progress tracking
+  # GAP: No progress streaming, no intermediate result caching
+  long_running_analysis:
+    shop: infrastructure
+    entrypoint: "long_analysis.run"
+    description: "Long-running code analysis with progress updates"
+    timeout_s: 600
+    steps:
+      # Start long analysis
+      - shop: mcp
+        provider: deep_code_reasoning
+        tool: escalate_analysis
+        params:
+          code_context: "{{ input.large_codebase }}"
+          depth: 5
+          time_budget: 300
+        timeout_s: 350
+
+      # GAP: No way to get progress updates during execution
+      # GAP: No way to cancel/pause long-running operations
+      # GAP: No intermediate result caching if operation fails
+
+  # Pipeline 8: Scheduled workflow with state persistence
+  # GAP: No scheduler integration, no cron-like functionality
+  scheduled_workflow:
+    shop: infrastructure
+    entrypoint: "scheduled.run"
+    description: "Scheduled workflow execution with state tracking"
+    timeout_s: 240
+    steps:
+      # Create scheduled workflow
+      - shop: mcp
+        provider: conductor
+        tool: create_workflow
+        params:
+          name: "daily_report"
+          schedule: "0 9 * * *"  # Daily at 9 AM
+          workflow_definition:
+            tasks:
+              - name: "fetch_metrics"
+                type: "http"
+              - name: "generate_report"
+                type: "simple"
+                depends_on: ["fetch_metrics"]
+              - name: "send_email"
+                type: "http"
+                depends_on: ["generate_report"]
+        timeout_s: 30
+
+      # GAP: No built-in scheduling in Sibyl
+      # GAP: No workflow state persistence across runs
+      # GAP: No trigger mechanism for scheduled pipelines
+
+# Global Budget Configuration
+budget:
+  max_cost_usd: 50.0
+  max_tokens: 1000000
+  max_requests: 5000

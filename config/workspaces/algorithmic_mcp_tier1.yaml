@@ -1,0 +1,397 @@
+# Algorithmic MCP Tier 1 Integration Workspace
+# Core Algorithmic Testing MCPs: Sequential Thinking, ast-grep, MCP-NLP
+#
+# This workspace demonstrates integration with three algorithmic-focused MCP servers
+# for enhanced reasoning, structural code analysis, and NLP operations.
+#
+# MCPs Included:
+#   1. Sequential Thinking - Dynamic reasoning with branching logic
+#   2. ast-grep - AST structural pattern matching
+#   3. MCP-NLP - Text distance + basic NLP algorithms
+#
+# Categories: reasoning, code_analysis, nlp, testing
+
+name: "algorithmic-mcp-tier1"
+description: "Core algorithmic testing integrations: reasoning, AST analysis, and NLP"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM provider for generation tasks (if needed)
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+  # MCP Providers
+  mcp:
+    # Sequential Thinking MCP Server
+    # Repository: https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
+    # Purpose: Dynamic reasoning with step-by-step thinking, revisions, and branching logic
+    sequential_thinking:
+      transport: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "@modelcontextprotocol/server-sequential-thinking"
+      env:
+        DISABLE_THOUGHT_LOGGING: "false"
+      tools:
+        - sequential_thinking
+      timeout_s: 60
+
+    # ast-grep MCP Server
+    # Repository: https://github.com/ast-grep/ast-grep-mcp
+    # Purpose: AST-based structural code search and pattern matching
+    ast_grep:
+      transport: stdio
+      command: "uv"
+      args:
+        - "--directory"
+        - "/path/to/ast-grep-mcp"  # TODO: Replace with actual installation path
+        - "run"
+        - "main.py"
+      tools:
+        - dump_syntax_tree
+        - test_match_code_rule
+        - find_code
+        - find_code_by_rule
+      timeout_s: 90
+
+    # MCP-NLP Server
+    # Repository: https://github.com/tivaliy/mcp-nlp
+    # Purpose: Text distance calculations and basic NLP algorithms
+    mcp_nlp:
+      transport: http
+      url: "http://localhost:8000"
+      tools:
+        - textdistance_measure
+        - textdistance_list_metrics
+      timeout_s: 30
+      # Optional: authentication if enabled
+      # auth:
+      #   type: bearer
+      #   token: "${MCP_NLP_API_KEY}"
+
+# Shop Configurations
+shops:
+  infrastructure:
+    techniques:
+      # Generic infrastructure technique placeholder
+      analyzer: "infrastructure.analysis:default"
+
+  code_analysis:
+    techniques:
+      # Code analysis techniques (would be implemented as needed)
+      ast_analyzer: "code_analysis.ast:default"
+      pattern_matcher: "code_analysis.patterns:default"
+
+# Pipeline Configurations
+pipelines:
+  # Pipeline 1: Sequential Thinking - Complex Problem Solving
+  sequential_reasoning:
+    shop: infrastructure
+    entrypoint: "reasoning.run"
+    description: "Multi-step reasoning trace for complex problem-solving with revision support"
+    timeout_s: 120
+    steps:
+      # Step 1: Initial thought
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Analyzing the problem: What are the key components?"
+          nextThoughtNeeded: true
+          thoughtNumber: 1
+          totalThoughts: 5
+          isRevision: false
+        timeout_s: 10
+
+      # Step 2: Deep analysis
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Breaking down the problem into sub-components and identifying dependencies"
+          nextThoughtNeeded: true
+          thoughtNumber: 2
+          totalThoughts: 5
+          isRevision: false
+        timeout_s: 10
+
+      # Step 3: Alternative approach (branching)
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Exploring alternative solution approach - what if we optimize for speed instead of memory?"
+          nextThoughtNeeded: true
+          thoughtNumber: 3
+          totalThoughts: 5
+          branchFromThought: 2
+          branchId: "optimization_branch"
+        timeout_s: 10
+
+      # Step 4: Revision based on new insight
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Revising step 2 analysis: discovered additional constraint that affects approach"
+          nextThoughtNeeded: true
+          thoughtNumber: 4
+          totalThoughts: 5
+          isRevision: true
+          revisesThought: 2
+        timeout_s: 10
+
+      # Step 5: Final synthesis
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Synthesizing all insights into final recommendation with tradeoffs"
+          nextThoughtNeeded: false
+          thoughtNumber: 5
+          totalThoughts: 5
+          isRevision: false
+        timeout_s: 10
+
+  # Pipeline 2: AST Analysis - Code Pattern Search
+  ast_pattern_search:
+    shop: code_analysis
+    entrypoint: "ast.search"
+    description: "Structural code search using AST pattern matching"
+    timeout_s: 90
+    steps:
+      # Step 1: Dump AST structure for understanding
+      - shop: mcp
+        provider: ast_grep
+        tool: dump_syntax_tree
+        params:
+          language: "python"
+          code: |
+            def process_data(input_data):
+                result = []
+                for item in input_data:
+                    result.append(item * 2)
+                return result
+        timeout_s: 15
+
+      # Step 2: Test match rule before applying to codebase
+      - shop: mcp
+        provider: ast_grep
+        tool: test_match_code_rule
+        params:
+          language: "python"
+          rule: |
+            id: find-for-loops
+            language: python
+            rule:
+              pattern: for $VAR in $ITER
+          code: |
+            for item in data:
+                process(item)
+        timeout_s: 20
+
+      # Step 3: Find simple pattern in codebase
+      - shop: mcp
+        provider: ast_grep
+        tool: find_code
+        params:
+          pattern: "for $VAR in $ITER"
+          language: "python"
+          directory: "."
+          max_results: 50
+          output_format: "text"
+        timeout_s: 30
+
+      # Step 4: Advanced rule-based search
+      - shop: mcp
+        provider: ast_grep
+        tool: find_code_by_rule
+        params:
+          rule: |
+            id: find-sql-injection-risk
+            language: python
+            rule:
+              any:
+                - pattern: execute($SQL_STR)
+                - pattern: executemany($SQL_STR, $PARAMS)
+              constraints:
+                SQL_STR:
+                  regex: ".*%s.*"
+          directory: "."
+          max_results: 100
+          output_format: "json"
+        timeout_s: 45
+
+  # Pipeline 3: Text Similarity Analysis
+  text_similarity_analysis:
+    shop: infrastructure
+    entrypoint: "nlp.similarity"
+    description: "Text distance and similarity computation using multiple algorithms"
+    timeout_s: 60
+    steps:
+      # Step 1: List available metrics
+      - shop: mcp
+        provider: mcp_nlp
+        tool: textdistance_list_metrics
+        params: {}
+        timeout_s: 5
+
+      # Step 2: Compute Levenshtein distance
+      - shop: mcp
+        provider: mcp_nlp
+        tool: textdistance_measure
+        params:
+          source: "The quick brown fox jumps over the lazy dog"
+          reference: "The quick brown fox jumped over the lazy dog"
+          algorithm: "levenshtein"
+          metric: "normalized_similarity"
+        timeout_s: 10
+
+      # Step 3: Compute cosine similarity
+      - shop: mcp
+        provider: mcp_nlp
+        tool: textdistance_measure
+        params:
+          source: "machine learning algorithms"
+          reference: "artificial intelligence models"
+          algorithm: "cosine"
+          metric: "similarity"
+        timeout_s: 10
+
+      # Step 4: Compute Jaccard similarity
+      - shop: mcp
+        provider: mcp_nlp
+        tool: textdistance_measure
+        params:
+          source: "natural language processing"
+          reference: "language processing natural"
+          algorithm: "jaccard"
+          metric: "normalized_similarity"
+        timeout_s: 10
+
+  # Pipeline 4: Hybrid Analysis - Combining Multiple MCPs
+  code_reasoning_analysis:
+    shop: code_analysis
+    entrypoint: "hybrid.analyze"
+    description: "Hybrid pipeline combining AST analysis with sequential reasoning"
+    timeout_s: 150
+    steps:
+      # Step 1: AST pattern search to find code to analyze
+      - shop: mcp
+        provider: ast_grep
+        tool: find_code
+        params:
+          pattern: "def $FUNC($PARAMS)"
+          language: "python"
+          directory: "."
+          max_results: 10
+          output_format: "text"
+        timeout_s: 30
+
+      # Step 2: Reason about the found patterns
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Analyzing the function definitions found: What patterns emerge?"
+          nextThoughtNeeded: true
+          thoughtNumber: 1
+          totalThoughts: 3
+        timeout_s: 10
+
+      # Step 3: Deep reasoning on code quality
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Evaluating code quality metrics: complexity, maintainability, testability"
+          nextThoughtNeeded: true
+          thoughtNumber: 2
+          totalThoughts: 3
+        timeout_s: 10
+
+      # Step 4: Final recommendation
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Synthesizing analysis: Top 3 recommendations for code improvement"
+          nextThoughtNeeded: false
+          thoughtNumber: 3
+          totalThoughts: 3
+        timeout_s: 10
+
+  # Pipeline 5: NLP + Reasoning - Text Analysis with Explanation
+  nlp_reasoning_pipeline:
+    shop: infrastructure
+    entrypoint: "nlp.analyze_with_reasoning"
+    description: "Text similarity analysis with sequential reasoning about results"
+    timeout_s: 90
+    steps:
+      # Step 1: Compute text similarity
+      - shop: mcp
+        provider: mcp_nlp
+        tool: textdistance_measure
+        params:
+          source: "The model shows promising results"
+          reference: "The algorithm demonstrates excellent performance"
+          algorithm: "levenshtein"
+          metric: "normalized_similarity"
+        timeout_s: 10
+
+      # Step 2: Reason about similarity score
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Interpreting similarity score: What does this metric tell us?"
+          nextThoughtNeeded: true
+          thoughtNumber: 1
+          totalThoughts: 3
+        timeout_s: 10
+
+      # Step 3: Compare with alternative metric
+      - shop: mcp
+        provider: mcp_nlp
+        tool: textdistance_measure
+        params:
+          source: "The model shows promising results"
+          reference: "The algorithm demonstrates excellent performance"
+          algorithm: "cosine"
+          metric: "similarity"
+        timeout_s: 10
+
+      # Step 4: Reason about different metrics
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Comparing Levenshtein vs cosine metrics: Which is more appropriate for this use case?"
+          nextThoughtNeeded: true
+          thoughtNumber: 2
+          totalThoughts: 3
+        timeout_s: 10
+
+      # Step 5: Final conclusion
+      - shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: "Concluding analysis: Best metric choice and confidence level in results"
+          nextThoughtNeeded: false
+          thoughtNumber: 3
+          totalThoughts: 3
+        timeout_s: 10
+
+# Budget Configuration
+budget:
+  max_cost_usd: 5.0
+  max_tokens: 50000
+  max_requests: 200

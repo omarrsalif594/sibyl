@@ -1,0 +1,333 @@
+{
+  "category": "Apparel",
+  "forecast_periods": 6,
+  "historical_data": {
+    "data": [
+      {
+        "timestamp": "2023-01-01T00:00:00",
+        "value": 4074.629999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-02-01T00:00:00",
+        "value": 3079.6699999999996,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-03-01T00:00:00",
+        "value": 3619.6899999999996,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-04-01T00:00:00",
+        "value": 3404.689999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-05-01T00:00:00",
+        "value": 1659.8300000000002,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-06-01T00:00:00",
+        "value": 2149.77,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-07-01T00:00:00",
+        "value": 3259.7199999999993,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-08-01T00:00:00",
+        "value": 1369.88,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-09-01T00:00:00",
+        "value": 2114.77,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-10-01T00:00:00",
+        "value": 4334.569999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-11-01T00:00:00",
+        "value": 3444.61,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-12-01T00:00:00",
+        "value": 6919.369999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-01-01T00:00:00",
+        "value": 4844.59,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-02-01T00:00:00",
+        "value": 3339.71,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-03-01T00:00:00",
+        "value": 2204.8,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-04-01T00:00:00",
+        "value": 2729.8100000000004,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-05-01T00:00:00",
+        "value": 2319.7799999999997,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-06-01T00:00:00",
+        "value": 2409.77,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-07-01T00:00:00",
+        "value": 1999.8200000000002,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-08-01T00:00:00",
+        "value": 3104.6599999999994,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-09-01T00:00:00",
+        "value": 4524.58,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-10-01T00:00:00",
+        "value": 5214.559999999997,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-11-01T00:00:00",
+        "value": 2969.72,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-12-01T00:00:00",
+        "value": 5894.409999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Apparel",
+          "is_historical": true
+        }
+      }
+    ],
+    "frequency": "monthly",
+    "metadata": {
+      "source": "acme_shop_orders",
+      "category": "Apparel",
+      "unit": "USD",
+      "metric": "revenue"
+    }
+  },
+  "forecast_data": {
+    "data": [
+      {
+        "timestamp": "2024-12-31T00:00:00",
+        "value": 3128.8300235089555,
+        "confidence_lower": 2659.505519982612,
+        "confidence_upper": 3598.154527035299,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-01-30T00:00:00",
+        "value": 3895.5272553512445,
+        "confidence_lower": 3311.198167048558,
+        "confidence_upper": 4479.856343653932,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-03-01T00:00:00",
+        "value": 6660.320695990762,
+        "confidence_lower": 5661.272591592147,
+        "confidence_upper": 7659.368800389377,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-03-31T00:00:00",
+        "value": 7755.602455765461,
+        "confidence_lower": 6592.262087400642,
+        "confidence_upper": 8918.94282413028,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-04-30T00:00:00",
+        "value": 8850.88421554016,
+        "confidence_lower": 7523.251583209136,
+        "confidence_upper": 10178.516847871184,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-05-30T00:00:00",
+        "value": 9946.165975314858,
+        "confidence_lower": 8454.241079017629,
+        "confidence_upper": 11438.090871612087,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      }
+    ],
+    "frequency": "monthly",
+    "metadata": {
+      "provider": "chronulus",
+      "model": "prophet",
+      "mae": 250.5,
+      "forecast_horizon": 6,
+      "training_samples": 24
+    }
+  },
+  "report": "================================================================================\nACME SHOP - REVENUE FORECAST REPORT\n================================================================================\n\nCategory: Apparel\nGenerated: 2025-11-22 18:27:41\n\n--------------------------------------------------------------------------------\nHISTORICAL DATA\n--------------------------------------------------------------------------------\nTime Series: 2023-01-01 to 2024-12-01\nFrequency: monthly\nPoints: 24\nMin: $1369.88, Max: $6919.37, Avg: $3374.48\n\nSample Points:\n  2023-01: $4074.63\n  2023-05: $1659.83\n  2023-09: $2114.77\n  2024-01: $4844.59\n  2024-05: $2319.78\n  2024-09: $4524.58\n\n--------------------------------------------------------------------------------\nFORECAST\n--------------------------------------------------------------------------------\nTime Series: 2024-12-31 to 2025-05-30\nFrequency: monthly\nPoints: 6\nMin: $3128.83, Max: $9946.17, Avg: $6706.22\n\nSample Points:\n  2024-12: $3128.83 (CI: $2659.51-$3598.15)\n  2025-01: $3895.53 (CI: $3311.20-$4479.86)\n  2025-03: $6660.32 (CI: $5661.27-$7659.37)\n  2025-03: $7755.60 (CI: $6592.26-$8918.94)\n  2025-04: $8850.88 (CI: $7523.25-$10178.52)\n  2025-05: $9946.17 (CI: $8454.24-$11438.09)\n\n--------------------------------------------------------------------------------\nKEY INSIGHTS\n--------------------------------------------------------------------------------\n\u2022 Last historical month revenue: $5,894.41\n\u2022 Average forecasted monthly revenue: $6,706.22\n\u2022 Expected change: +13.8%\n\u2022 Peak forecasted month: May 2025 ($9,946.17)\n\n================================================================================",
+  "metadata": {
+    "pipeline": "revenue_forecast",
+    "timestamp": "2025-11-22T18:27:41.458956",
+    "database": "../examples/companies/acme_shop/data/sql/acme_shop.db"
+  }
+}

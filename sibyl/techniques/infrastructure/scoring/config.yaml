@@ -1,0 +1,12 @@
+name: scoring
+description: |
+  Agent scoring techniques for calculating confidence, quality, and relevance scores.
+  Extracted from hardcoded scoring logic in agents/planner.py, agents/reviewer.py, and agents/search.py.
+
+subtechniques:
+  - confidence_calculation
+  - quality_scoring
+  - relevance_scoring
+
+default_subtechnique: confidence_calculation
+default_implementation: weighted_sum

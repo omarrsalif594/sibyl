@@ -1,0 +1,458 @@
+# Northwind Analytics Pipeline Definitions
+# These pipelines demonstrate realistic BI/analytics workflows
+
+pipelines:
+  # ============================================================================
+  # Pipeline 1: Revenue Analysis
+  # ============================================================================
+  # Answers: "Why is revenue down in Q3?"
+  # Combines SQL queries with documentation context
+  revenue_analysis:
+    description: "Analyze revenue trends and identify contributing factors"
+    timeout_s: 180
+
+    inputs:
+      - name: question
+        type: string
+        required: true
+        description: "Business question about revenue (e.g., 'Why is revenue down in Q3?')"
+
+      - name: time_period
+        type: string
+        required: false
+        default: "2024-Q3"
+        description: "Time period to analyze (format: YYYY-QN or YYYY-MM)"
+
+      - name: region
+        type: string
+        required: false
+        description: "Optional region filter (North America, EMEA, APAC, LATAM)"
+
+    steps:
+      # Step 1: Query expansion - understand what the user is asking
+      - name: expand_query
+        use: analytics_shop.query_processor
+        inputs:
+          query: "{{ inputs.question }}"
+        outputs:
+          expanded_query: expanded_terms
+          key_concepts: concepts
+
+      # Step 2: Retrieve relevant documentation
+      # Find context about revenue definitions, calculations, and known issues
+      - name: retrieve_docs
+        use: rag_shop.retriever
+        inputs:
+          query: "{{ expanded_query }} revenue metrics {{ inputs.time_period }}"
+          top_k: 5
+          data_source: product_docs
+        outputs:
+          documents: relevant_docs
+          scores: relevance_scores
+
+      # Step 3: Query SQL warehouse for revenue data
+      # This would use a custom SQL technique (simulated here)
+      - name: query_revenue_data
+        use: analytics_shop.generator
+        inputs:
+          prompt: |
+            Based on the question: "{{ inputs.question }}"
+
+            Query the analytics_warehouse to get revenue data for {{ inputs.time_period }}.
+            {% if inputs.region %}Focus on region: {{ inputs.region }}{% endif %}
+
+            Relevant SQL tables:
+            - revenue: revenue_id, customer_id, region_id, year_month, mrr, arr, new_mrr, expansion_mrr, contraction_mrr, churned_mrr
+            - regions: region_id, region_name, region_code, quota_mrr
+            - customers: customer_id, company_name, segment, region_id, status
+            - subscriptions: subscription_id, customer_id, monthly_value, status, start_date, end_date
+
+            Generate SQL query to analyze revenue trends, identifying:
+            1. Total MRR by month
+            2. MRR changes (new, expansion, contraction, churn)
+            3. Regional breakdown
+            4. Customer segment analysis
+          data_source: analytics_warehouse
+        outputs:
+          sql_results: revenue_data
+          query_executed: sql_query
+
+      # Step 4: Augment with citations from documentation
+      - name: add_citations
+        use: rag_shop.augmenter
+        inputs:
+          context: "{{ relevant_docs }}"
+          data: "{{ revenue_data }}"
+        outputs:
+          augmented_context: context_with_citations
+
+      # Step 5: Generate comprehensive analysis
+      - name: generate_analysis
+        use: analytics_shop.generator
+        inputs:
+          prompt: |
+            Question: {{ inputs.question }}
+
+            Revenue Data:
+            {{ revenue_data }}
+
+            Relevant Documentation:
+            {{ context_with_citations }}
+
+            Provide a comprehensive analysis that:
+            1. Directly answers the question
+            2. Quantifies the revenue change with specific numbers
+            3. Identifies top contributing factors (with citations)
+            4. Explains business context from the documentation
+            5. Suggests actionable next steps
+
+            Format as:
+            ## Summary
+            [One paragraph summary with key numbers]
+
+            ## Key Findings
+            - Finding 1 [Citation]
+            - Finding 2 [Citation]
+
+            ## Contributing Factors
+            1. Factor ($ impact)
+            2. Factor ($ impact)
+
+            ## Recommendations
+            - Action item
+            - Action item
+        outputs:
+          analysis: final_analysis
+
+      # Step 6: Validate quality
+      - name: validate_response
+        use: analytics_shop.validator
+        inputs:
+          response: "{{ final_analysis }}"
+          criteria:
+            - has_specific_numbers
+            - includes_citations
+            - actionable_recommendations
+        outputs:
+          validated: is_valid
+          quality_score: score
+
+    outputs:
+      analysis: "{{ final_analysis }}"
+      data: "{{ revenue_data }}"
+      sources: "{{ relevant_docs }}"
+      quality_score: "{{ score }}"
+
+  # ============================================================================
+  # Pipeline 2: Dashboard Explanation
+  # ============================================================================
+  # Answers: "Explain this dashboard to a new PM"
+  # Pure RAG over documentation
+  explain_dashboard:
+    description: "Explain dashboard features and metrics in beginner-friendly language"
+    timeout_s: 120
+
+    inputs:
+      - name: dashboard_name
+        type: string
+        required: true
+        description: "Name of dashboard to explain (e.g., 'Revenue Overview', 'Customer Health')"
+
+      - name: audience
+        type: string
+        required: false
+        default: "new product manager"
+        description: "Target audience for explanation"
+
+      - name: focus_areas
+        type: array
+        required: false
+        description: "Optional specific areas to focus on (e.g., ['metrics', 'filters', 'interactions'])"
+
+    steps:
+      # Step 1: Retrieve relevant documentation sections
+      - name: retrieve_documentation
+        use: rag_shop.retriever
+        inputs:
+          query: "{{ inputs.dashboard_name }} dashboard user guide features metrics"
+          top_k: 8
+          data_source: product_docs
+          filters:
+            document_type: ["user_guide", "dashboard_guide", "feature_docs"]
+        outputs:
+          documents: dashboard_docs
+
+      # Step 2: Rerank by relevance to specific focus areas
+      - name: rerank_by_focus
+        use: rag_shop.reranker
+        inputs:
+          query: "{{ inputs.dashboard_name }} {% if inputs.focus_areas %}{{ inputs.focus_areas | join(' ') }}{% endif %}"
+          documents: "{{ dashboard_docs }}"
+          top_k: 5
+        outputs:
+          ranked_docs: prioritized_docs
+
+      # Step 3: Extract relevant sections
+      - name: chunk_documentation
+        use: rag_shop.chunker
+        inputs:
+          documents: "{{ prioritized_docs }}"
+          chunk_size: 600
+          overlap: 80
+        outputs:
+          chunks: doc_chunks
+
+      # Step 4: Add citations for traceability
+      - name: cite_sources
+        use: rag_shop.augmenter
+        inputs:
+          context: "{{ doc_chunks }}"
+        outputs:
+          cited_context: context_with_sources
+
+      # Step 5: Generate beginner-friendly explanation
+      - name: generate_explanation
+        use: summarization_shop.generator
+        inputs:
+          prompt: |
+            Explain the "{{ inputs.dashboard_name }}" dashboard to a {{ inputs.audience }}.
+
+            Documentation:
+            {{ context_with_sources }}
+
+            {% if inputs.focus_areas %}
+            Focus especially on: {{ inputs.focus_areas | join(', ') }}
+            {% endif %}
+
+            Requirements:
+            1. Use simple, non-technical language
+            2. Start with a one-paragraph overview
+            3. Explain key metrics in plain English (avoid jargon)
+            4. Describe how to use the dashboard (step-by-step)
+            5. Highlight the most important features first
+            6. Include practical examples
+            7. Add tips for getting started quickly
+
+            Tone: Friendly, educational, encouraging
+            Length: 400-600 words
+
+            Format:
+            ## Overview
+            [High-level description]
+
+            ## Key Metrics
+            - **Metric Name**: What it means and why it matters
+
+            ## How to Use
+            1. Step-by-step instructions
+
+            ## Pro Tips
+            - Helpful shortcuts or best practices
+        outputs:
+          explanation: dashboard_explanation
+
+      # Step 6: Validate explanation quality
+      - name: validate_explanation
+        use: summarization_shop.validator
+        inputs:
+          response: "{{ dashboard_explanation }}"
+          criteria:
+            - appropriate_length
+            - beginner_friendly
+            - includes_examples
+            - well_structured
+        outputs:
+          quality_score: explanation_quality
+
+    outputs:
+      explanation: "{{ dashboard_explanation }}"
+      sources: "{{ prioritized_docs }}"
+      quality_score: "{{ explanation_quality }}"
+
+  # ============================================================================
+  # Pipeline 3: Generate Release Notes
+  # ============================================================================
+  # Combines structured data (feature list) with unstructured docs
+  generate_release_notes:
+    description: "Generate release notes from feature documentation"
+    timeout_s: 150
+
+    inputs:
+      - name: version
+        type: string
+        required: true
+        description: "Release version (e.g., 'v2.1.0')"
+
+      - name: release_date
+        type: string
+        required: true
+        description: "Release date (YYYY-MM-DD)"
+
+      - name: feature_keywords
+        type: array
+        required: true
+        description: "List of feature keywords to include (e.g., ['alerts', 'anomaly detection', 'mobile'])"
+
+    steps:
+      # Step 1: Retrieve documentation for each feature
+      - name: retrieve_feature_docs
+        use: rag_shop.retriever
+        inputs:
+          query: "features {{ inputs.feature_keywords | join(' ') }} documentation"
+          top_k: 10
+          data_source: product_docs
+        outputs:
+          feature_docs: retrieved_docs
+
+      # Step 2: Chunk and organize by feature
+      - name: organize_features
+        use: rag_shop.chunker
+        inputs:
+          documents: "{{ feature_docs }}"
+          chunk_size: 500
+        outputs:
+          feature_chunks: organized_chunks
+
+      # Step 3: Generate release notes
+      - name: create_release_notes
+        use: analytics_shop.generator
+        inputs:
+          prompt: |
+            Create release notes for Northwind Analytics {{ inputs.version }}.
+            Release Date: {{ inputs.release_date }}
+
+            Features to highlight:
+            {{ inputs.feature_keywords | join(', ') }}
+
+            Feature Documentation:
+            {{ organized_chunks }}
+
+            Format:
+            # Northwind Analytics {{ inputs.version }}
+            Released {{ inputs.release_date }}
+
+            ## 🎉 New Features
+            - **Feature Name**: Brief description (1-2 sentences) highlighting user benefit
+
+            ## ✨ Improvements
+            - Enhancement description
+
+            ## 🐛 Bug Fixes
+            - Fix description (if applicable)
+
+            ## 📚 Documentation
+            - Link to updated docs
+
+            ## ⚡ Performance
+            - Performance improvements (if any)
+
+            Requirements:
+            1. Focus on USER BENEFITS, not technical details
+            2. Use action verbs (Added, Improved, Fixed)
+            3. Include specific examples where possible
+            4. Keep bullet points concise (1-2 sentences max)
+            5. Organize features by importance
+            6. Add emoji for visual appeal
+
+            Tone: Exciting, professional, user-focused
+        outputs:
+          release_notes: generated_notes
+
+      # Step 4: Format and validate
+      - name: validate_notes
+        use: analytics_shop.validator
+        inputs:
+          response: "{{ generated_notes }}"
+          criteria:
+            - proper_formatting
+            - includes_all_features
+            - user_focused_language
+        outputs:
+          validation_score: notes_quality
+
+    outputs:
+      release_notes: "{{ generated_notes }}"
+      features_covered: "{{ inputs.feature_keywords }}"
+      quality_score: "{{ notes_quality }}"
+
+  # ============================================================================
+  # Pipeline 4: Customer Health Summary (Bonus)
+  # ============================================================================
+  # SQL-heavy pipeline analyzing customer health scores
+  customer_health_summary:
+    description: "Analyze customer health scores and identify at-risk accounts"
+    timeout_s: 120
+
+    inputs:
+      - name: segment
+        type: string
+        required: false
+        description: "Customer segment filter (Enterprise, Professional, Starter)"
+
+      - name: health_threshold
+        type: integer
+        required: false
+        default: 50
+        description: "Health score threshold for 'at risk' (0-100)"
+
+    steps:
+      # Step 1: Query customer health data
+      - name: query_health_scores
+        use: analytics_shop.generator
+        inputs:
+          prompt: |
+            Query the analytics_warehouse for customer health analysis.
+            {% if inputs.segment %}Filter to segment: {{ inputs.segment }}{% endif %}
+            Identify customers with health_score <= {{ inputs.health_threshold }}
+
+            Include:
+            - Customer name, segment, health score
+            - Component scores (usage, support, payment)
+            - Days since last login
+            - Current MRR
+
+            Order by health score ascending (worst first)
+            Limit to top 20 at-risk customers
+          data_source: analytics_warehouse
+        outputs:
+          health_data: customer_health_results
+
+      # Step 2: Retrieve documentation about health scores
+      - name: get_health_definitions
+        use: rag_shop.retriever
+        inputs:
+          query: "customer health score calculation definition components"
+          top_k: 3
+          data_source: product_docs
+        outputs:
+          health_docs: score_definitions
+
+      # Step 3: Generate summary with recommendations
+      - name: create_summary
+        use: analytics_shop.generator
+        inputs:
+          prompt: |
+            Customer Health Analysis
+            {% if inputs.segment %}Segment: {{ inputs.segment }}{% endif %}
+
+            Health Data:
+            {{ customer_health_results }}
+
+            Health Score Definitions:
+            {{ score_definitions }}
+
+            Provide:
+            1. Executive summary (2-3 sentences)
+            2. Total at-risk customers and aggregate MRR at risk
+            3. Top 5 most critical customers with specific concerns
+            4. Common patterns across at-risk customers
+            5. Recommended actions for Customer Success team
+
+            Format as actionable report for CS leadership.
+        outputs:
+          summary: health_summary
+
+    outputs:
+      summary: "{{ health_summary }}"
+      at_risk_customers: "{{ customer_health_results }}"
+      health_definitions: "{{ score_definitions }}"

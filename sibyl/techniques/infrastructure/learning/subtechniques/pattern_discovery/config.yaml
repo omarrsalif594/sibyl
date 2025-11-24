@@ -1,0 +1,4 @@
+subtechnique: pattern_discovery
+description: "Pattern discovery methods"
+default_implementation: frequency_based
+enabled: true

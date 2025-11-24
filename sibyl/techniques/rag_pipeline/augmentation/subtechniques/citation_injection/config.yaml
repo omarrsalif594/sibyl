@@ -1,0 +1,4 @@
+subtechnique: citation_injection
+description: "Citation injection methods"
+default_implementation: inline_citations
+enabled: true

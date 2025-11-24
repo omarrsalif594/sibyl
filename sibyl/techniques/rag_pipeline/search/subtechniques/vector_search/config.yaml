@@ -1,0 +1,4 @@
+subtechnique: vector_search
+description: "Vector similarity search"
+default_implementation: faiss
+enabled: true

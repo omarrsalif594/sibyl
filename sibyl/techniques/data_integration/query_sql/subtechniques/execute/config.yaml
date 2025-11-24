@@ -1,0 +1,4 @@
+subtechnique: execute
+description: "Execute"
+default_implementation: default
+enabled: true

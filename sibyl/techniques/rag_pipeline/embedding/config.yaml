@@ -1,0 +1,35 @@
+# Embedding Technique Configuration
+# This configuration is technique-level and applies to all embedding subtechniques
+
+# Default embedding parameters
+defaults:
+  # Embedding dimension (depends on model)
+  embedding_dim: 384
+
+  # Batch size for embedding generation
+  batch_size: 32
+
+  # Whether to normalize embeddings
+  normalize: true
+
+# Performance settings
+performance:
+  # Enable parallel processing
+  parallel: true
+
+  # Number of workers for parallel processing
+  num_workers: 4
+
+  # Show progress during embedding
+  show_progress: true
+
+# Caching
+cache:
+  # Enable embedding cache
+  enabled: true
+
+  # Cache directory
+  cache_dir: "/tmp/sibyl_embeddings"
+
+  # Cache expiration in seconds
+  expiration: 86400  # 24 hours

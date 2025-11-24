@@ -1,0 +1,11 @@
+technique: query_sql
+description: "Query and execute SQL statements"
+version: "1.0.0"
+default_subtechnique: query
+default_variant: default
+timeout: 300
+max_retries: 3
+enabled: true
+subtechniques:
+  - query
+  - execute

@@ -1,0 +1,4 @@
+subtechnique: quorum_voting
+description: "Quorum-based voting strategies"
+default_implementation: five_agent
+enabled: true

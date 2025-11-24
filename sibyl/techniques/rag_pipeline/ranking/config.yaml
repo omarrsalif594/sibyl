@@ -1,0 +1,5 @@
+technique: ranking
+description: "Ranking technique"
+version: "1.0.0"
+default_subtechnique: relevance_scoring
+enabled: true

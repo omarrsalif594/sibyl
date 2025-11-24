@@ -1,0 +1,5 @@
+subtechnique: threshold_voting
+description: "Threshold-based voting aggregation"
+default_variant: default
+enabled: true
+threshold: 0.5

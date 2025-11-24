@@ -1,0 +1,84 @@
+# Rotation-based session management configuration
+# This configuration integrates session rotation and circuit breaker patterns
+
+subtechnique: rotation_based
+description: "Session rotation with operation draining and circuit breaker protection"
+version: "1.0.0"
+
+# Session rotation settings (from session.rotation in core_defaults.yaml)
+rotation:
+  # Poll interval for rotation operations (milliseconds)
+  # Source: session/rotation_manager.py - poll interval for checking rotation status
+  operation_poll_ms: 100
+
+  # Status logging interval (seconds)
+  # Source: session/rotation_manager.py - how often to log rotation status
+  status_log_interval_seconds: 5
+
+  # Early rotation threshold (percentage 0.0-1.0)
+  # Source: session/rotation_manager.py:217-218 - triggers context summarization
+  # Eliminates hardcoded: 60% threshold for early rotation warning
+  early_rotation_threshold: 0.60
+
+  # Force rotation threshold (percentage 0.0-1.0)
+  # Source: session/rotation_manager.py:268 - forces session rotation
+  # Eliminates hardcoded: 70% threshold for forced rotation
+  force_rotation_threshold: 0.70
+
+  # Operation draining timeout (seconds)
+  # Source: session/rotation_manager.py:337 - max time to wait for in-flight operations
+  rotation_timeout_seconds: 30
+
+# Circuit breaker settings (from session.circuit_breaker in core_defaults.yaml)
+circuit_breaker:
+  # Number of consecutive failures before opening circuit
+  # Source: session/circuit_breaker.py:105 - failure threshold for circuit breaker
+  # Eliminates hardcoded: 3 consecutive failures
+  failure_threshold: 3
+
+  # Time to wait before attempting recovery (seconds)
+  # Source: session/circuit_breaker.py:106 - recovery timeout
+  # Eliminates hardcoded: 30 seconds recovery timeout
+  recovery_timeout_seconds: 30
+
+  # Maximum calls allowed in HALF_OPEN state
+  # Source: session/circuit_breaker.py:107 - max calls during recovery testing
+  # Eliminates hardcoded: 1 call in half-open state
+  half_open_max_calls: 1
+
+# Session creation defaults
+session_defaults:
+  # Default token budget per session
+  default_tokens_budget: 200000
+
+  # Default model name
+  default_model_name: "claude-sonnet-4.5"
+
+  # Enable generation counter for atomic swaps
+  enable_generation_counter: true
+
+  # Enable operation tracking for draining
+  enable_operation_tracking: true
+
+# Observability settings
+observability:
+  # Log rotation events
+  log_rotation_events: true
+
+  # Log circuit breaker state changes
+  log_circuit_breaker_events: true
+
+  # Emit metrics for rotation operations
+  emit_metrics: true
+
+  # Trace rotation operations
+  enable_tracing: false
+
+# Environment variable overrides
+# These allow runtime configuration via environment variables:
+# - SIBYL_SESSION_ROTATION_OPERATION_POLL_MS
+# - SIBYL_SESSION_ROTATION_EARLY_ROTATION_THRESHOLD
+# - SIBYL_SESSION_ROTATION_FORCE_ROTATION_THRESHOLD
+# - SIBYL_SESSION_CIRCUIT_BREAKER_FAILURE_THRESHOLD
+# - SIBYL_SESSION_CIRCUIT_BREAKER_RECOVERY_TIMEOUT_SECONDS
+env_overrides_enabled: true

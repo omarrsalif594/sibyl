@@ -1,0 +1,271 @@
+# LocaLLama MCP Integration Workspace
+# Cost optimization through intelligent LLM routing
+#
+# This workspace demonstrates integration with the LocaLLama MCP Server
+# for dynamic cost optimization by routing requests between local, free, and paid LLMs.
+#
+# MCP Server: https://mcp.so/server/locallama-mcp
+# Categories: cost_optimization, routing
+# Expected Benefits:
+#   - 40-60% cost reduction by routing simple tasks to local/free models
+#   - Real-time cost tracking and budget enforcement
+#   - Quality-cost tradeoff optimization via benchmarking
+#   - Automatic fallback handling for provider failures
+
+name: "locallama-cost-optimization"
+description: "LLM cost optimization with intelligent routing via LocaLLama MCP"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM Providers - Multi-tier strategy
+  llm:
+    # Tier 1: Local models (free, fast, good for simple tasks)
+    local:
+      provider: "ollama"
+      model: "llama3:8b"
+      base_url: "http://localhost:11434"
+      max_tokens: 2048
+      temperature: 0.7
+
+    # Tier 2: Free API models (free, moderate quality)
+    free:
+      provider: "groq"
+      model: "llama-3.1-70b-versatile"
+      api_key_env: "GROQ_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    # Tier 3: Paid premium models (paid, highest quality)
+    paid:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    # Tier 3b: Paid mid-tier (paid, good quality, lower cost)
+    paid_mid:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+  # LocaLLama MCP Server
+  mcp:
+    locallama:
+      transport: http
+      url: "http://localhost:6002"
+      tools:
+        - route_request
+        - estimate_cost
+        - get_cost_report
+        - benchmark_providers
+        - set_routing_policy
+        - get_provider_health
+      timeout_s: 60
+
+# Shop Configurations
+shops:
+  infrastructure:
+    techniques:
+      optimizer: "infrastructure.workflow_optimization:provider_selection"
+      budget: "infrastructure.budget_allocation:cost_estimation"
+      evaluator: "infrastructure.evaluation:cost_metrics"
+
+    config:
+      default_routing_policy: "balanced"
+      cost_threshold_usd: 0.01
+
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generator:default"
+
+    config:
+      default_temperature: 0.7
+
+# Pipeline Configurations
+pipelines:
+  # Pipeline 1: Cost-optimized generation with intelligent routing
+  cost_optimized_generation:
+    shop: ai_generation
+    entrypoint: "generate.run"
+    description: "Generate text with intelligent cost optimization via LLM routing"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 0.50
+      max_tokens: 10000
+    steps:
+      # Step 1: Check provider health before routing
+      - shop: mcp
+        provider: locallama
+        tool: get_provider_health
+        params:
+          providers: ["local", "free", "paid", "paid_mid"]
+        timeout_s: 10
+
+      # Step 2: Estimate costs across available providers
+      - shop: mcp
+        provider: locallama
+        tool: estimate_cost
+        params:
+          prompt: "{{ input.prompt }}"
+          providers: "{{ context.healthy_providers }}"
+          max_tokens: "{{ input.max_tokens | default(2048) }}"
+        timeout_s: 10
+
+      # Step 3: Route request based on complexity and budget
+      - shop: mcp
+        provider: locallama
+        tool: route_request
+        params:
+          prompt: "{{ input.prompt }}"
+          complexity: "{{ input.complexity | default('auto') }}"
+          routing_policy: "{{ input.routing_policy | default('balanced') }}"
+          max_cost_usd: "{{ input.max_cost_usd | default(0.05) }}"
+          estimated_costs: "{{ context.cost_estimates }}"
+        timeout_s: 15
+
+      # Step 4: Generate using selected provider
+      # Note: This would be implemented with actual LLM generation
+      # The selected provider is available in context.selected_provider
+
+      # Step 5: Get cost report for this request
+      - shop: mcp
+        provider: locallama
+        tool: get_cost_report
+        params:
+          request_id: "{{ context.request_id }}"
+          include_breakdown: true
+        timeout_s: 5
+
+  # Pipeline 2: Benchmark providers and update routing
+  benchmark_and_route:
+    shop: infrastructure
+    entrypoint: "benchmark.run"
+    description: "Benchmark LLM providers and optimize routing policy"
+    timeout_s: 300
+    budget:
+      max_cost_usd: 5.0
+      max_tokens: 50000
+    steps:
+      # Step 1: Run benchmark suite across providers
+      - shop: mcp
+        provider: locallama
+        tool: benchmark_providers
+        params:
+          providers: ["local", "free", "paid_mid", "paid"]
+          test_prompts: "{{ input.test_prompts }}"
+          metrics: ["latency", "quality", "cost"]
+        timeout_s: 240
+
+      # Step 2: Analyze benchmark results
+      # This would compute optimal routing policy based on results
+
+      # Step 3: Update routing policy
+      - shop: mcp
+        provider: locallama
+        tool: set_routing_policy
+        params:
+          policy_name: "optimized"
+          rules:
+            - complexity: "simple"
+              preferred_providers: ["local", "free"]
+              max_cost_usd: 0.001
+            - complexity: "moderate"
+              preferred_providers: ["free", "paid_mid"]
+              max_cost_usd: 0.01
+            - complexity: "complex"
+              preferred_providers: ["paid_mid", "paid"]
+              max_cost_usd: 0.10
+          fallback_chain: ["paid_mid", "free", "local"]
+        timeout_s: 10
+
+  # Pipeline 3: Batch generation with cost tracking
+  batch_generate_with_tracking:
+    shop: ai_generation
+    entrypoint: "batch_generate.run"
+    description: "Generate multiple completions with cost tracking and optimization"
+    timeout_s: 600
+    budget:
+      max_cost_usd: 10.0
+      max_tokens: 100000
+    steps:
+      # Step 1: Set cost-first routing policy for batch
+      - shop: mcp
+        provider: locallama
+        tool: set_routing_policy
+        params:
+          policy_name: "cost_first"
+          rules:
+            - complexity: "simple"
+              preferred_providers: ["local"]
+            - complexity: "moderate"
+              preferred_providers: ["free", "local"]
+            - complexity: "complex"
+              preferred_providers: ["free", "paid_mid"]
+        timeout_s: 5
+
+      # Step 2: For each prompt in batch, route and generate
+      # (Would iterate over input.prompts)
+
+      # Step 3: Get final cost report
+      - shop: mcp
+        provider: locallama
+        tool: get_cost_report
+        params:
+          aggregation: "summary"
+          include_breakdown: true
+          groupby: "provider"
+        timeout_s: 10
+
+  # Pipeline 4: Quality-first generation (when cost is not primary concern)
+  quality_optimized_generation:
+    shop: ai_generation
+    entrypoint: "quality_generate.run"
+    description: "Generate with focus on quality, using cost as secondary constraint"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 1.0
+      max_tokens: 10000
+    steps:
+      # Step 1: Set quality-first routing
+      - shop: mcp
+        provider: locallama
+        tool: set_routing_policy
+        params:
+          policy_name: "quality_first"
+          rules:
+            - complexity: "simple"
+              preferred_providers: ["paid_mid", "paid"]
+            - complexity: "moderate"
+              preferred_providers: ["paid", "paid_mid"]
+            - complexity: "complex"
+              preferred_providers: ["paid"]
+        timeout_s: 5
+
+      # Step 2: Route with quality preference
+      - shop: mcp
+        provider: locallama
+        tool: route_request
+        params:
+          prompt: "{{ input.prompt }}"
+          routing_policy: "quality_first"
+          min_quality_score: 0.85
+        timeout_s: 15
+
+      # Step 3: Generate with selected high-quality provider
+
+      # Step 4: Track cost (for budget monitoring)
+      - shop: mcp
+        provider: locallama
+        tool: get_cost_report
+        params:
+          request_id: "{{ context.request_id }}"
+
+# Global Budget Configuration
+budget:
+  max_cost_usd: 50.0
+  max_tokens: 500000
+  max_requests: 5000

@@ -1,0 +1,4 @@
+subtechnique: hybrid_search
+description: "Hybrid search strategies"
+default_implementation: rrf
+enabled: true

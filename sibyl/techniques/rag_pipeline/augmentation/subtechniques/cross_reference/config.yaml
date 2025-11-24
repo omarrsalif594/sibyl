@@ -1,0 +1,4 @@
+subtechnique: cross_reference
+description: "Cross-referencing strategies"
+default_implementation: entity_links
+enabled: true

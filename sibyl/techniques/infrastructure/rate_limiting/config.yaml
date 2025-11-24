@@ -1,0 +1,68 @@
+# Rate Limiting Technique Configuration
+# This technique provides configurable rate limiting for API requests
+
+technique:
+  id: rate_limiting
+  name: Rate Limiting
+  description: Configurable rate limiting with sliding window algorithm
+  version: 1.0.0
+  enabled: true
+  category: security
+
+# Configuration parameters (loaded from core config)
+parameters:
+  default_rpm:
+    description: Default requests per minute
+    type: integer
+    default: 100
+    source: security.rate_limiter.default_rpm
+
+  window_seconds:
+    description: Rate limit window duration in seconds
+    type: integer
+    default: 60
+    source: security.rate_limiter.window_seconds
+
+  cleanup_interval_seconds:
+    description: Cleanup interval for rate limit state
+    type: integer
+    default: 300
+    source: security.rate_limiter.cleanup_interval_seconds
+
+  exempt_ips:
+    description: List of exempt IP addresses
+    type: list
+    default: ["localhost", "127.0.0.1", "::1"]
+    source: security.rate_limiter.exempt_ips
+
+# Subtechniques
+subtechniques:
+  - id: sliding_window
+    name: Sliding Window
+    description: Token bucket with sliding window algorithm
+    enabled: true
+    default: true
+
+  - id: fixed_window
+    name: Fixed Window
+    description: Fixed window rate limiting
+    enabled: false
+    default: false
+
+  - id: token_bucket
+    name: Token Bucket
+    description: Classic token bucket algorithm
+    enabled: false
+    default: false
+
+# Validation rules
+validation:
+  default_rpm:
+    min: 1
+    max: 10000
+  window_seconds:
+    min: 1
+    max: 3600
+  cleanup_interval_seconds:
+    min: 60
+    max: 86400

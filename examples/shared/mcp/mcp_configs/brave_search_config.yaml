@@ -1,0 +1,30 @@
+# Brave Search MCP Configuration
+# Usage: Include this snippet in your workspace.yaml
+
+mcps:
+  brave_search:
+    enabled: true
+
+    # API credentials
+    api_key: ${BRAVE_API_KEY}
+
+    # Search settings
+    country: US
+    search_lang: en
+    safesearch: moderate  # off, moderate, strict
+
+    # Result limits
+    max_results: 10
+
+    # Features
+    text_decorations: true
+    spellcheck: true
+
+# Example usage in pipeline:
+# techniques:
+#   - name: web_research
+#     type: data_integration/web_search
+#     config:
+#       mcp_name: brave_search
+#       query: "machine learning best practices 2024"
+#       count: 5

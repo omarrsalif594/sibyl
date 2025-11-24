@@ -1,0 +1,110 @@
+name: "acme-shop"
+description: "Acme Shop e-commerce example - RAG Q&A, time-series forecasting, and production MCPs"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM provider for Q&A generation
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    # Cheaper model for simple tasks
+    simple:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.5
+
+  # Embeddings for RAG
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Document sources - Product docs and FAQs
+  document_sources:
+    product_docs:
+      type: filesystem_markdown
+      config:
+        root: ./data/docs
+        pattern: "**/*.md"
+
+  # Vector store - Qdrant for product knowledge
+  vector_store:
+    product_knowledge:
+      kind: qdrant
+      url: "http://localhost:6333"
+      collection_name: "acme_products"
+      distance_metric: cosine
+
+  # SQL Database - Orders and products
+  sql:
+    orders_db:
+      type: sqlite
+      config:
+        path: ./data/sql/acme_shop.db
+
+  # MCP Providers
+  mcp:
+    # Chronulus - Time-series forecasting
+    chronulus:
+      transport: stdio
+      command: "python"
+      args:
+        - "-m"
+        - "chronulus_mcp"
+      env:
+        CHRONULUS_API_KEY: "${CHRONULUS_API_KEY}"
+      tools:
+        - create_forecast
+        - get_forecast_status
+        - download_forecast_data
+        - visualize_forecast
+        - explain_forecast
+      timeout_s: 120
+
+    # Optional: Solver for optimization
+    solver:
+      transport: stdio
+      command: "python"
+      args:
+        - "-m"
+        - "solver_mcp"
+      env:
+        SOLVER_API_KEY: "${SOLVER_API_KEY}"
+      tools:
+        - create_optimization
+        - get_optimization_status
+        - get_optimization_result
+      timeout_s: 90
+
+# Shop configurations
+shops:
+  # RAG shop for product Q&A
+  product_qa:
+    techniques:
+      chunker: "rag_pipeline.chunking:markdown_chunking"
+      embedder: "rag_pipeline.embedding:sentence_transformer"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      reranker: "rag_pipeline.reranking:cross_encoder"
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+      top_k: 10
+      rerank_top_n: 5
+
+  # Analytics shop for forecasting
+  analytics:
+    techniques:
+      sql_loader: "data_integration.query_sql:default"
+      time_series_analyzer: "ai_generation.validation:quality_scoring"
+    config:
+      validation_threshold: 0.7

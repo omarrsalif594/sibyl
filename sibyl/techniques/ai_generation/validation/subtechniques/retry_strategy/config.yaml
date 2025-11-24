@@ -1,0 +1,4 @@
+subtechnique: retry_strategy
+description: "Retry and backoff strategies"
+default_implementation: exponential_backoff
+enabled: true

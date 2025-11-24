@@ -1,0 +1,19 @@
+# Sliding Window Rate Limiting Configuration
+
+subtechnique:
+  id: sliding_window
+  name: Sliding Window
+  description: Token bucket with sliding window algorithm
+  version: 1.0.0
+  enabled: true
+
+# Algorithm parameters
+parameters:
+  algorithm: sliding_window
+  track_per_endpoint: true
+  track_per_ip: true
+
+# Performance tuning
+performance:
+  max_tracked_keys: 10000
+  cleanup_threshold: 5000

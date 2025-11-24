@@ -1,0 +1,5 @@
+subtechnique: json_repair
+description: "Repair and validate malformed JSON outputs"
+default_variant: default
+enabled: true
+max_retries: 2

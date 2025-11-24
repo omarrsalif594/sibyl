@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "outputs": {
+    "release_notes": "# Northwind Analytics v2.1.0\nReleased 2024-10-15\n\n## New Features\n\n- **Smart Alerts**: Get notified instantly when key metrics cross thresholds. Set custom alerts for MRR changes, churn spikes, or customer health scores.\n\n- **Anomaly Detection**: Automatically identify unusual patterns in your data. Our ML-powered system highlights revenue anomalies, unexpected churn, and growth opportunities you might have missed.\n\n- **Mobile App**: Access your dashboards on the go with our new iOS and Android apps. View real-time metrics, receive push notifications for alerts, and share insights with your team from anywhere.\n\n## Improvements\n\n- Enhanced dashboard loading speed by 40%\n- Improved export functionality with custom date ranges\n- Better error messages for data validation\n\n## Bug Fixes\n\n- Fixed issue where regional filters were not persisting across sessions\n- Resolved calculation error in customer health scores for Enterprise segment\n- Corrected timezone handling in automated reports\n\n## Documentation\n\n- Updated user guides for all new features\n- Added video tutorials for alert configuration\n- Expanded API reference with mobile endpoints\n\n## Performance\n\n- Reduced query response time by 35% for large datasets\n- Optimized vector search for faster documentation retrieval\n- Improved memory usage for dashboard rendering",
+    "features_covered": [
+      "alerts",
+      "anomaly detection",
+      "mobile app"
+    ],
+    "quality_score": 0.91
+  },
+  "metadata": {
+    "pipeline_name": "generate_release_notes",
+    "steps_completed": 4
+  }
+}

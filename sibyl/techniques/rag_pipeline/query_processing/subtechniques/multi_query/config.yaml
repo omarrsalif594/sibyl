@@ -1,0 +1,4 @@
+subtechnique: multi_query
+description: "Multi-query generation"
+default_implementation: perspective_variation
+enabled: true

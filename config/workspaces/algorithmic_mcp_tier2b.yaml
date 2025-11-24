@@ -1,0 +1,480 @@
+# Tier 2B Code/AST-Oriented MCPs Integration Workspace
+# Advanced semantic code analysis, AST parsing, and intelligent chunking
+#
+# This workspace demonstrates integration with Tier 2B MCPs specializing in
+# code structure analysis, semantic understanding, and AST-based operations.
+#
+# Categories: code_analysis, ast_parsing, semantic_chunking, code_intelligence
+# Expected Benefits:
+#   - Deep semantic understanding via LSP integration (Serena)
+#   - Multi-language AST/ASG generation and analysis (AST Server)
+#   - Structure-aware code chunking for RAG (ChunkHound cAST)
+#   - High-performance JS/TS parsing and validation (OXC Parser)
+
+name: "tier2b-code-ast-mcps"
+description: "Code/AST-oriented MCPs for semantic analysis and intelligent chunking"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM provider for code generation and analysis
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.3
+
+  # Embeddings provider for semantic search
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store for code indexing
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/code_ast_vectors.duckdb"
+      collection_name: "code_chunks"
+      distance_metric: "cosine"
+
+  # MCP Providers for Code/AST Analysis
+  mcp:
+    # Serena: LSP-based semantic code analysis
+    # Repository: https://github.com/oraios/serena
+    # Transport: stdio (Node.js based MCP server)
+    serena:
+      transport: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "@oraios/serena"
+      env:
+        LOG_LEVEL: "INFO"
+      tools:
+        - find_symbol
+        - find_referencing_symbols
+        - insert_after_symbol
+        - get_symbol_definition
+        - list_symbols
+        - analyze_semantic_scope
+      timeout_s: 60
+
+    # AST Server: Multi-language semantic graph analysis
+    # Repository: https://github.com/angrysky56/ast-mcp-server
+    # Transport: stdio (Python based MCP server)
+    ast_server:
+      transport: stdio
+      command: "python"
+      args:
+        - "-m"
+        - "ast_mcp_server"
+      env:
+        LOG_LEVEL: "INFO"
+      tools:
+        - parse_to_ast
+        - generate_asg
+        - analyze_code
+        - supported_languages
+        - parse_and_cache
+        - generate_and_cache_asg
+        - analyze_and_cache
+        - parse_to_ast_incremental
+        - generate_enhanced_asg
+        - diff_ast
+        - find_node_at_position
+      timeout_s: 90
+
+    # ChunkHound: cAST chunking for RAG
+    # Repository: https://github.com/chunkhound/chunkhound
+    # Transport: stdio (Python based MCP server)
+    chunkhound:
+      transport: stdio
+      command: "chunkhound"
+      args:
+        - "mcp"
+      env:
+        OPENAI_API_KEY: "${OPENAI_API_KEY}"
+        LOG_LEVEL: "INFO"
+      tools:
+        - semantic_search
+        - regex_search
+        - index_codebase
+        - research_code
+        - get_chunk_stats
+      timeout_s: 120
+
+    # OXC Parser: High-performance JS/TS parser
+    # Repository: https://github.com/leaysgur/oxc-ast-mcp
+    # Transport: stdio (Rust binary via npx)
+    oxc_parser:
+      transport: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "oxc-ast-mcp"
+      env:
+        LOG_LEVEL: "INFO"
+      tools:
+        - parse
+        - docs
+        - check
+      timeout_s: 45
+
+# Shop Configurations
+shops:
+  rag:
+    techniques:
+      # Use cAST chunking via ChunkHound
+      chunker: "rag_pipeline.chunking:cast_aware"
+
+      # Use semantic search for retrieval
+      retriever: "rag_pipeline.retrieval:semantic_search"
+
+      # Use embeddings for document vectorization
+      embedder: "rag_pipeline.embedding:default"
+
+      # Use indexing for vector store operations
+      indexer: "rag_pipeline.indexing:default"
+
+    config:
+      # ChunkHound cAST parameters
+      chunk_strategy: "ast_aware"
+      preserve_structure: true
+
+      # Retrieval parameters
+      top_k: 10
+      similarity_threshold: 0.75
+
+  code_processing:
+    techniques:
+      # AST-based code analysis
+      ast_analyzer: "code_processing.ast:tree_sitter"
+
+      # Semantic symbol resolution
+      symbol_resolver: "code_processing.symbols:lsp_based"
+
+    config:
+      # Code analysis parameters
+      max_depth: 10
+      include_comments: true
+      preserve_whitespace: false
+
+# Pipeline Configurations
+pipelines:
+  # Pipeline 1: Serena - Semantic Code Query via LSP
+  serena_semantic_query:
+    shop: code_processing
+    entrypoint: "code.analyze"
+    description: "Query code semantically using LSP-based symbol analysis via Serena"
+    timeout_s: 90
+    steps:
+      # Step 1: Find symbol definition
+      - shop: mcp
+        provider: serena
+        tool: find_symbol
+        params:
+          symbol_name: "{{ input.symbol_name }}"
+          workspace_path: "{{ input.workspace_path }}"
+        timeout_s: 30
+
+      # Step 2: Find all references to the symbol
+      - shop: mcp
+        provider: serena
+        tool: find_referencing_symbols
+        params:
+          symbol_name: "{{ input.symbol_name }}"
+          workspace_path: "{{ input.workspace_path }}"
+        timeout_s: 30
+
+      # Step 3: Analyze semantic scope
+      - shop: mcp
+        provider: serena
+        tool: analyze_semantic_scope
+        params:
+          symbol_id: "{{ context.symbol_id }}"
+          include_imports: true
+        timeout_s: 20
+
+  # Pipeline 2: AST Server - Build Semantic Graph
+  ast_semantic_graph:
+    shop: code_processing
+    entrypoint: "ast.build_graph"
+    description: "Parse code to AST, generate semantic graph, and analyze relationships"
+    timeout_s: 120
+    steps:
+      # Step 1: Parse code to AST with caching
+      - shop: mcp
+        provider: ast_server
+        tool: parse_and_cache
+        params:
+          code: "{{ input.code }}"
+          language: "{{ input.language }}"
+        timeout_s: 30
+
+      # Step 2: Generate enhanced ASG with improved scope handling
+      - shop: mcp
+        provider: ast_server
+        tool: generate_enhanced_asg
+        params:
+          code: "{{ input.code }}"
+          language: "{{ input.language }}"
+        timeout_s: 45
+
+      # Step 3: Analyze code complexity and structure
+      - shop: mcp
+        provider: ast_server
+        tool: analyze_code
+        params:
+          code: "{{ input.code }}"
+          language: "{{ input.language }}"
+        timeout_s: 30
+
+  # Pipeline 3: ChunkHound - cAST Chunking + RAG Integration
+  chunkhound_cast_rag:
+    shop: rag
+    entrypoint: "rag.chunk_and_index"
+    description: "Index codebase with cAST chunking and enable semantic search"
+    timeout_s: 300
+    budget:
+      max_cost_usd: 2.0
+      max_tokens: 100000
+    steps:
+      # Step 1: Index codebase with cAST chunking
+      - shop: mcp
+        provider: chunkhound
+        tool: index_codebase
+        params:
+          codebase_path: "{{ input.codebase_path }}"
+          languages: ["python", "javascript", "typescript"]
+          chunk_strategy: "cast"
+          embedding_model: "text-embedding-3-small"
+        timeout_s: 180
+
+      # Step 2: Get chunking statistics
+      - shop: mcp
+        provider: chunkhound
+        tool: get_chunk_stats
+        params:
+          codebase_path: "{{ input.codebase_path }}"
+        timeout_s: 10
+
+      # Step 3: Perform semantic search test
+      - shop: mcp
+        provider: chunkhound
+        tool: semantic_search
+        params:
+          query: "{{ input.test_query }}"
+          top_k: 10
+          include_context: true
+        timeout_s: 30
+
+  # Pipeline 4: ChunkHound Research - Multi-hop Code Exploration
+  chunkhound_research:
+    shop: code_processing
+    entrypoint: "code.research"
+    description: "Deep code research with multi-hop exploration using ChunkHound"
+    timeout_s: 180
+    budget:
+      max_tokens: 150000
+    steps:
+      # Step 1: Initial semantic search
+      - shop: mcp
+        provider: chunkhound
+        tool: semantic_search
+        params:
+          query: "{{ input.research_query }}"
+          top_k: 20
+          include_context: true
+        timeout_s: 30
+
+      # Step 2: Multi-hop research exploration
+      - shop: mcp
+        provider: chunkhound
+        tool: research_code
+        params:
+          initial_query: "{{ input.research_query }}"
+          max_hops: 3
+          exploration_strategy: "bfs"
+          token_budget: 50000
+        timeout_s: 120
+
+  # Pipeline 5: OXC Parser - JS/TS Parsing and Validation
+  oxc_parse_validate:
+    shop: code_processing
+    entrypoint: "js.parse_and_validate"
+    description: "Parse JavaScript/TypeScript with OXC and perform semantic validation"
+    timeout_s: 60
+    steps:
+      # Step 1: Parse code to AST
+      - shop: mcp
+        provider: oxc_parser
+        tool: parse
+        params:
+          code: "{{ input.code }}"
+          ext: "{{ input.extension }}"
+        timeout_s: 15
+
+      # Step 2: Check for syntactic and semantic issues
+      - shop: mcp
+        provider: oxc_parser
+        tool: check
+        params:
+          code: "{{ input.code }}"
+          ext: "{{ input.extension }}"
+          check_semantic: true
+        timeout_s: 20
+
+  # Pipeline 6: AST Diff Analysis
+  ast_diff_analysis:
+    shop: code_processing
+    entrypoint: "code.diff"
+    description: "Compare two code versions and identify AST-level changes"
+    timeout_s: 90
+    steps:
+      # Step 1: Diff two code versions
+      - shop: mcp
+        provider: ast_server
+        tool: diff_ast
+        params:
+          code_v1: "{{ input.code_before }}"
+          code_v2: "{{ input.code_after }}"
+          language: "{{ input.language }}"
+        timeout_s: 45
+
+      # Step 2: Find node at specific position in new code
+      - shop: mcp
+        provider: ast_server
+        tool: find_node_at_position
+        params:
+          code: "{{ input.code_after }}"
+          language: "{{ input.language }}"
+          line: "{{ input.target_line }}"
+          column: "{{ input.target_column }}"
+        timeout_s: 15
+
+  # Pipeline 7: Hybrid Semantic + Regex Code Search
+  hybrid_code_search:
+    shop: rag
+    entrypoint: "search.hybrid"
+    description: "Combine semantic and regex search for comprehensive code retrieval"
+    timeout_s: 90
+    steps:
+      # Step 1: Semantic search for conceptual matches
+      - shop: mcp
+        provider: chunkhound
+        tool: semantic_search
+        params:
+          query: "{{ input.query }}"
+          top_k: 15
+          include_context: true
+        timeout_s: 30
+
+      # Step 2: Regex search for pattern matches
+      - shop: mcp
+        provider: chunkhound
+        tool: regex_search
+        params:
+          pattern: "{{ input.regex_pattern }}"
+          file_types: ["py", "js", "ts"]
+          max_results: 50
+        timeout_s: 20
+
+      # Step 3: Merge and rank results (future: implement ranking logic)
+
+  # Pipeline 8: Full Stack Code Analysis
+  full_stack_analysis:
+    shop: code_processing
+    entrypoint: "code.analyze_full"
+    description: "Complete code analysis combining AST, semantic graph, and LSP"
+    timeout_s: 180
+    steps:
+      # Step 1: Parse to AST with AST Server
+      - shop: mcp
+        provider: ast_server
+        tool: parse_to_ast
+        params:
+          code: "{{ input.code }}"
+          language: "{{ input.language }}"
+        timeout_s: 30
+
+      # Step 2: Generate semantic graph
+      - shop: mcp
+        provider: ast_server
+        tool: generate_enhanced_asg
+        params:
+          code: "{{ input.code }}"
+          language: "{{ input.language }}"
+        timeout_s: 45
+
+      # Step 3: LSP-based symbol analysis (Python/JS/TS only)
+      - shop: mcp
+        provider: serena
+        tool: list_symbols
+        params:
+          file_path: "{{ input.file_path }}"
+          workspace_path: "{{ input.workspace_path }}"
+        timeout_s: 30
+
+      # Step 4: For JS/TS, validate with OXC (conditional)
+      - shop: mcp
+        provider: oxc_parser
+        tool: check
+        params:
+          code: "{{ input.code }}"
+          ext: "{{ input.extension }}"
+          check_semantic: true
+        timeout_s: 20
+
+  # Pipeline 9: Code RAG with AST-Aware Chunking
+  ast_aware_code_rag:
+    shop: rag
+    entrypoint: "rag.code_query"
+    description: "RAG pipeline optimized for code with AST-aware chunking"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 1.5
+      max_tokens: 75000
+    steps:
+      # Step 1: Semantic search with ChunkHound (cAST chunks)
+      - shop: mcp
+        provider: chunkhound
+        tool: semantic_search
+        params:
+          query: "{{ input.query }}"
+          top_k: 20
+          include_context: true
+        timeout_s: 30
+
+      # Step 2: For JS/TS results, validate with OXC
+      # Note: Would need result filtering logic in future
+      - shop: mcp
+        provider: oxc_parser
+        tool: check
+        params:
+          code: "{{ context.top_result_code }}"
+          ext: "ts"
+          check_semantic: false
+        timeout_s: 15
+
+      # Step 3: Build semantic graph for top result
+      - shop: mcp
+        provider: ast_server
+        tool: generate_enhanced_asg
+        params:
+          code: "{{ context.top_result_code }}"
+          language: "{{ context.detected_language }}"
+        timeout_s: 30
+
+      # Step 4: Generate answer using LLM with AST context
+      # Note: Future implementation would use LLM generation technique
+
+# Budget Configuration
+budget:
+  max_cost_usd: 20.0
+  max_tokens: 500000
+  max_requests: 1000

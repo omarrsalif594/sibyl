@@ -1,0 +1,747 @@
+# Algorithmic MCP Tier 2A Integration Workspace
+# Advanced Algorithmic MCPs: Solver, Graph, and Memory Systems
+#
+# This workspace integrates four Tier 2A "Advanced Algorithmic" MCPs for complex
+# problem-solving, knowledge graph operations, pattern learning, and graph analytics.
+#
+# MCPs Integrated:
+#   1. MCP Solver - Constraint programming with multiple backends (MiniZinc, PySAT, Z3, ASP)
+#   2. Graphiti - Temporal knowledge graphs with hybrid retrieval
+#   3. In-Memoria - Pattern learning and cumulative intelligence
+#   4. NetworkX - Graph algorithms (PageRank, centrality, community detection)
+#
+# Key Focus: Complex data structures, rich outputs, and stateful operations
+# These MCPs require careful consideration of artifact types and data model sufficiency.
+
+name: "algorithmic-mcp-tier2a"
+description: "Advanced algorithmic MCPs for constraint solving, knowledge graphs, pattern learning, and network analysis"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM provider for AI-powered operations
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+  # Embeddings provider for semantic operations
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store for semantic storage
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/algorithmic_mcp_vectors.duckdb"
+      collection_name: "algorithmic_artifacts"
+      distance_metric: "cosine"
+
+  # MCP Provider 1: MCP Solver - Constraint Programming
+  # Repository: https://github.com/szeider/mcp-solver
+  # Backends: MiniZinc, PySAT, Z3, ASP (Answer Set Programming)
+  # Use Cases: Scheduling, resource allocation, optimization problems
+  mcp:
+    mcp_solver:
+      transport: stdio
+      command: "uvx"
+      args:
+        - "mcp-solver-mzn"  # Using MiniZinc backend
+      env:
+        MINIZINC_PATH: "/usr/local/bin/minizinc"
+      tools:
+        - clear_model
+        - add_item
+        - delete_item
+        - replace_item
+        - get_model
+        - solve_model
+      timeout_s: 180
+
+    # MCP Provider 2: Graphiti - Temporal Knowledge Graphs
+    # Repository: https://github.com/getzep/graphiti
+    # Backend: Neo4j or FalkorDB (Redis-based)
+    # Use Cases: Entity relationship tracking, temporal context, hybrid retrieval
+    graphiti:
+      transport: http
+      url: "http://localhost:8000/mcp/"
+      tools:
+        - add_episode
+        - get_episodes
+        - delete_episodes
+        - search_nodes
+        - search_facts
+        - clear_graph
+        - rebuild_indices
+      timeout_s: 120
+
+    # MCP Provider 3: In-Memoria - Pattern Learning & Cumulative Intelligence
+    # Repository: https://github.com/pi22by7/In-Memoria
+    # Storage: Local SQLite + SurrealDB with SurrealKV
+    # Use Cases: Codebase intelligence, pattern recommendations, architectural learning
+    in_memoria:
+      transport: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "@pi22by7/in-memoria"
+      env:
+        IN_MEMORIA_DB_PATH: "./data/in_memoria/.in-memoria.db"
+      tools:
+        - analyze_codebase
+        - search_codebase
+        - learn_codebase_intelligence
+        - get_project_blueprint
+        - get_semantic_insights
+        - get_pattern_recommendations
+        - predict_coding_approach
+        - get_developer_profile
+        - contribute_insights
+        - auto_learn_if_needed
+        - get_system_status
+        - get_intelligence_metrics
+        - get_performance_status
+      timeout_s: 300  # Learning operations can be intensive
+
+    # MCP Provider 4: NetworkX - Graph Algorithm Analysis
+    # Repository: https://github.com/brightlikethelight/networkx-mcp-server
+    # Algorithms: PageRank, centrality, community detection, pathfinding
+    # Use Cases: Dependency analysis, network metrics, graph visualization
+    networkx:
+      transport: http
+      url: "http://localhost:8001"
+      tools:
+        - create_graph
+        - add_nodes
+        - add_edges
+        - pagerank
+        - betweenness_centrality
+        - closeness_centrality
+        - degree_centrality
+        - eigenvector_centrality
+        - community_detection
+        - shortest_path
+        - graph_info
+        - visualize_graph
+        - export_graph
+      timeout_s: 90
+
+# Shop Configurations
+shops:
+  # Infrastructure shop for system-level operations
+  infrastructure:
+    techniques:
+      solver: "algorithms.constraint_solver:mcp_solver"
+      graph_analyzer: "algorithms.graph_analysis:networkx"
+
+  # RAG shop for knowledge graph operations
+  rag:
+    techniques:
+      knowledge_graph: "rag_pipeline.knowledge_graph:graphiti"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      embedder: "rag_pipeline.embedding:default"
+
+  # Code intelligence shop for pattern learning
+  code_intelligence:
+    techniques:
+      pattern_learner: "code_analysis.pattern_learning:in_memoria"
+      codebase_analyzer: "code_analysis.analysis:static"
+
+# Pipeline Configurations
+pipelines:
+  # ============================================================================
+  # MCP SOLVER PIPELINES - Constraint Programming
+  # ============================================================================
+
+  # Pipeline 1: Task Scheduling Optimization
+  # Complex constraint problem with multiple variables and temporal constraints
+  task_scheduling_optimization:
+    shop: infrastructure
+    entrypoint: "scheduling.optimize"
+    description: "Solve multi-resource task scheduling with time windows and dependencies"
+    timeout_s: 240
+    steps:
+      # Step 1: Clear any existing model
+      - shop: mcp
+        provider: mcp_solver
+        tool: clear_model
+        params: {}
+        timeout_s: 5
+
+      # Step 2: Define decision variables (tasks and time slots)
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 0
+          content: "int: n_tasks = 5; int: n_resources = 3; int: max_time = 10;"
+        timeout_s: 5
+
+      # Step 3: Add task duration constraints
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 1
+          content: "array[1..n_tasks] of int: duration = [2, 3, 1, 4, 2];"
+        timeout_s: 5
+
+      # Step 4: Add decision variables for start times
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 2
+          content: "array[1..n_tasks] of var 0..max_time: start;"
+        timeout_s: 5
+
+      # Step 5: Add resource assignment variables
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 3
+          content: "array[1..n_tasks] of var 1..n_resources: resource;"
+        timeout_s: 5
+
+      # Step 6: Add precedence constraints (task dependencies)
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 4
+          content: "constraint start[2] >= start[1] + duration[1];"
+        timeout_s: 5
+
+      # Step 7: Add resource capacity constraints
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 5
+          content: "constraint forall(t in 1..max_time, r in 1..n_resources)(sum(i in 1..n_tasks where resource[i] = r /\\ start[i] <= t /\\ t < start[i] + duration[i])(1) <= 1);"
+        timeout_s: 5
+
+      # Step 8: Add objective function (minimize makespan)
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 6
+          content: "var int: makespan = max([start[i] + duration[i] | i in 1..n_tasks]);"
+        timeout_s: 5
+
+      # Step 9: Add solve statement
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 7
+          content: "solve minimize makespan;"
+        timeout_s: 5
+
+      # Step 10: Solve the constraint model
+      - shop: mcp
+        provider: mcp_solver
+        tool: solve_model
+        params:
+          timeout: 120
+        timeout_s: 150
+
+  # Pipeline 2: Resource Allocation with Multiple Constraints
+  resource_allocation_solver:
+    shop: infrastructure
+    entrypoint: "allocation.solve"
+    description: "Allocate resources to agents with budget, skill, and availability constraints"
+    timeout_s: 180
+    steps:
+      - shop: mcp
+        provider: mcp_solver
+        tool: clear_model
+        params: {}
+        timeout_s: 5
+
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 0
+          content: "int: n_agents = 4; int: n_tasks = 6; int: budget = 100;"
+        timeout_s: 5
+
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 1
+          content: "array[1..n_tasks] of int: cost = [10, 15, 20, 12, 18, 25];"
+        timeout_s: 5
+
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 2
+          content: "array[1..n_agents, 1..n_tasks] of var 0..1: assign;"
+        timeout_s: 5
+
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 3
+          content: "constraint forall(t in 1..n_tasks)(sum(a in 1..n_agents)(assign[a,t]) = 1);"
+        timeout_s: 5
+
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 4
+          content: "constraint sum(a in 1..n_agents, t in 1..n_tasks)(assign[a,t] * cost[t]) <= budget;"
+        timeout_s: 5
+
+      - shop: mcp
+        provider: mcp_solver
+        tool: add_item
+        params:
+          index: 5
+          content: "solve satisfy;"
+        timeout_s: 5
+
+      - shop: mcp
+        provider: mcp_solver
+        tool: solve_model
+        params:
+          timeout: 60
+        timeout_s: 90
+
+  # ============================================================================
+  # GRAPHITI PIPELINES - Temporal Knowledge Graphs
+  # ============================================================================
+
+  # Pipeline 3: Build Entity Dependency Graph with PageRank
+  entity_graph_with_pagerank:
+    shop: rag
+    entrypoint: "knowledge_graph.build_and_rank"
+    description: "Build entity relationship graph from episodes and compute PageRank centrality"
+    timeout_s: 180
+    steps:
+      # Step 1: Add episode about software architecture
+      - shop: mcp
+        provider: graphiti
+        tool: add_episode
+        params:
+          content: "The API Gateway service depends on the Authentication service and the Rate Limiter service. The Authentication service connects to the User Database. The Rate Limiter uses Redis Cache for tracking."
+          group_id: "architecture_analysis"
+        timeout_s: 30
+
+      # Step 2: Add another episode about service dependencies
+      - shop: mcp
+        provider: graphiti
+        tool: add_episode
+        params:
+          content: "The Payment Processor service relies on the API Gateway for requests and connects to the Payment Database. It also sends notifications through the Notification service."
+          group_id: "architecture_analysis"
+        timeout_s: 30
+
+      # Step 3: Add episode about data flow
+      - shop: mcp
+        provider: graphiti
+        tool: add_episode
+        params:
+          content: "The Analytics Engine reads from both the User Database and Payment Database. It publishes metrics to the Monitoring Dashboard through the Message Queue."
+          group_id: "architecture_analysis"
+        timeout_s: 30
+
+      # Step 4: Search for all service nodes (entities)
+      - shop: mcp
+        provider: graphiti
+        tool: search_nodes
+        params:
+          query: "service OR database OR cache"
+          group_id: "architecture_analysis"
+          limit: 20
+        timeout_s: 30
+
+      # Step 5: Search for dependency relationships (facts/edges)
+      - shop: mcp
+        provider: graphiti
+        tool: search_facts
+        params:
+          query: "depends on OR connects to OR relies on"
+          group_id: "architecture_analysis"
+          limit: 50
+        timeout_s: 30
+
+      # NOTE: PageRank computation would need to be done by:
+      # 1. Extracting graph structure from Graphiti results
+      # 2. Passing to NetworkX MCP for centrality analysis
+      # This demonstrates the need for graph transformation capabilities
+
+  # Pipeline 4: Temporal Context Retrieval with Hybrid Search
+  temporal_context_retrieval:
+    shop: rag
+    entrypoint: "knowledge_graph.temporal_search"
+    description: "Retrieve temporally-aware context using hybrid semantic and graph-based search"
+    timeout_s: 120
+    steps:
+      # Step 1: Add recent episode with timestamp context
+      - shop: mcp
+        provider: graphiti
+        tool: add_episode
+        params:
+          content: "User preferences updated: dark mode enabled, notification frequency set to daily, language preference changed to Spanish."
+          group_id: "user_preferences"
+        timeout_s: 20
+
+      # Step 2: Search for preference-related facts
+      - shop: mcp
+        provider: graphiti
+        tool: search_facts
+        params:
+          query: "user preference settings"
+          group_id: "user_preferences"
+          limit: 10
+        timeout_s: 30
+
+      # Step 3: Search for preference entity nodes
+      - shop: mcp
+        provider: graphiti
+        tool: search_nodes
+        params:
+          query: "preference"
+          group_id: "user_preferences"
+          limit: 10
+        timeout_s: 30
+
+      # Step 4: Retrieve recent episodes for temporal context
+      - shop: mcp
+        provider: graphiti
+        tool: get_episodes
+        params:
+          group_id: "user_preferences"
+          limit: 5
+        timeout_s: 20
+
+  # ============================================================================
+  # IN-MEMORIA PIPELINES - Pattern Learning & Cumulative Intelligence
+  # ============================================================================
+
+  # Pipeline 5: Multi-Step Pattern Learning (Stateful)
+  codebase_intelligence_learning:
+    shop: code_intelligence
+    entrypoint: "pattern_learning.learn_and_recommend"
+    description: "Learn codebase patterns across multiple calls and provide recommendations"
+    timeout_s: 400
+    steps:
+      # Step 1: Check system status and decide if learning is needed
+      - shop: mcp
+        provider: in_memoria
+        tool: auto_learn_if_needed
+        params:
+          path: "{{ input.codebase_path }}"
+          force_learn: false
+        timeout_s: 60
+
+      # Step 2: Get initial project blueprint (fast, <200 tokens)
+      - shop: mcp
+        provider: in_memoria
+        tool: get_project_blueprint
+        params:
+          path: "{{ input.codebase_path }}"
+        timeout_s: 30
+
+      # Step 3: Analyze specific directory for patterns
+      - shop: mcp
+        provider: in_memoria
+        tool: analyze_codebase
+        params:
+          path: "{{ input.codebase_path }}/src"
+          depth: 3
+        timeout_s: 90
+
+      # Step 4: Learn deep codebase intelligence (architectural patterns)
+      - shop: mcp
+        provider: in_memoria
+        tool: learn_codebase_intelligence
+        params:
+          path: "{{ input.codebase_path }}"
+          include_tests: true
+        timeout_s: 180
+
+      # Step 5: Get pattern recommendations based on learned intelligence
+      - shop: mcp
+        provider: in_memoria
+        tool: get_pattern_recommendations
+        params:
+          context: "implementing new API endpoint"
+          limit: 5
+        timeout_s: 20
+
+      # Step 6: Retrieve semantic insights about architecture
+      - shop: mcp
+        provider: in_memoria
+        tool: get_semantic_insights
+        params:
+          query: "authentication and authorization patterns"
+          limit: 10
+        timeout_s: 30
+
+      # Step 7: Get intelligence metrics to verify learning
+      - shop: mcp
+        provider: in_memoria
+        tool: get_intelligence_metrics
+        params: {}
+        timeout_s: 10
+
+  # Pipeline 6: Coding Approach Prediction with File Routing
+  predict_implementation_approach:
+    shop: code_intelligence
+    entrypoint: "pattern_learning.predict_approach"
+    description: "Predict coding approach and route to relevant files based on learned patterns"
+    timeout_s: 120
+    steps:
+      # Step 1: Search codebase for similar implementations
+      - shop: mcp
+        provider: in_memoria
+        tool: search_codebase
+        params:
+          query: "{{ input.feature_description }}"
+          mode: "semantic"
+          limit: 10
+        timeout_s: 30
+
+      # Step 2: Predict coding approach based on patterns
+      - shop: mcp
+        provider: in_memoria
+        tool: predict_coding_approach
+        params:
+          task_description: "{{ input.feature_description }}"
+          context: "{{ context.similar_implementations }}"
+        timeout_s: 30
+
+      # Step 3: Get developer profile for style consistency
+      - shop: mcp
+        provider: in_memoria
+        tool: get_developer_profile
+        params: {}
+        timeout_s: 10
+
+      # Step 4: Contribute architectural decision for future reference
+      - shop: mcp
+        provider: in_memoria
+        tool: contribute_insights
+        params:
+          insight: "{{ input.architectural_decision }}"
+          category: "design_pattern"
+        timeout_s: 10
+
+  # ============================================================================
+  # NETWORKX PIPELINES - Graph Algorithm Analysis
+  # ============================================================================
+
+  # Pipeline 7: Dependency Graph Analysis with Multiple Centrality Metrics
+  dependency_graph_centrality_analysis:
+    shop: infrastructure
+    entrypoint: "graph_analysis.centrality"
+    description: "Analyze dependency graph with PageRank, betweenness, and closeness centrality"
+    timeout_s: 150
+    steps:
+      # Step 1: Create directed graph for dependencies
+      - shop: mcp
+        provider: networkx
+        tool: create_graph
+        params:
+          graph_type: "directed"
+          graph_id: "dependency_graph"
+        timeout_s: 10
+
+      # Step 2: Add service nodes
+      - shop: mcp
+        provider: networkx
+        tool: add_nodes
+        params:
+          graph_id: "dependency_graph"
+          nodes:
+            - id: "api_gateway"
+              label: "API Gateway"
+            - id: "auth_service"
+              label: "Authentication Service"
+            - id: "payment_service"
+              label: "Payment Processor"
+            - id: "user_db"
+              label: "User Database"
+            - id: "payment_db"
+              label: "Payment Database"
+            - id: "cache"
+              label: "Redis Cache"
+            - id: "notification"
+              label: "Notification Service"
+        timeout_s: 10
+
+      # Step 3: Add dependency edges
+      - shop: mcp
+        provider: networkx
+        tool: add_edges
+        params:
+          graph_id: "dependency_graph"
+          edges:
+            - source: "api_gateway"
+              target: "auth_service"
+              weight: 1.0
+            - source: "api_gateway"
+              target: "cache"
+              weight: 1.0
+            - source: "auth_service"
+              target: "user_db"
+              weight: 1.0
+            - source: "payment_service"
+              target: "api_gateway"
+              weight: 1.0
+            - source: "payment_service"
+              target: "payment_db"
+              weight: 1.0
+            - source: "payment_service"
+              target: "notification"
+              weight: 1.0
+        timeout_s: 10
+
+      # Step 4: Compute PageRank (identifies most important nodes)
+      - shop: mcp
+        provider: networkx
+        tool: pagerank
+        params:
+          graph_id: "dependency_graph"
+          alpha: 0.85
+          max_iterations: 100
+        timeout_s: 30
+
+      # Step 5: Compute betweenness centrality (identifies bottlenecks)
+      - shop: mcp
+        provider: networkx
+        tool: betweenness_centrality
+        params:
+          graph_id: "dependency_graph"
+          normalized: true
+        timeout_s: 30
+
+      # Step 6: Compute closeness centrality (identifies accessibility)
+      - shop: mcp
+        provider: networkx
+        tool: closeness_centrality
+        params:
+          graph_id: "dependency_graph"
+          normalized: true
+        timeout_s: 30
+
+      # Step 7: Get graph info summary
+      - shop: mcp
+        provider: networkx
+        tool: graph_info
+        params:
+          graph_id: "dependency_graph"
+        timeout_s: 10
+
+  # Pipeline 8: Community Detection and Visualization
+  graph_community_detection:
+    shop: infrastructure
+    entrypoint: "graph_analysis.communities"
+    description: "Detect communities in entity graph and visualize structure"
+    timeout_s: 120
+    steps:
+      # Step 1: Create undirected graph
+      - shop: mcp
+        provider: networkx
+        tool: create_graph
+        params:
+          graph_type: "undirected"
+          graph_id: "entity_graph"
+        timeout_s: 10
+
+      # Step 2: Add nodes representing entities
+      - shop: mcp
+        provider: networkx
+        tool: add_nodes
+        params:
+          graph_id: "entity_graph"
+          nodes:
+            - id: "user_a"
+              type: "user"
+            - id: "user_b"
+              type: "user"
+            - id: "user_c"
+              type: "user"
+            - id: "doc_1"
+              type: "document"
+            - id: "doc_2"
+              type: "document"
+            - id: "topic_ai"
+              type: "topic"
+            - id: "topic_ml"
+              type: "topic"
+        timeout_s: 10
+
+      # Step 3: Add edges representing relationships
+      - shop: mcp
+        provider: networkx
+        tool: add_edges
+        params:
+          graph_id: "entity_graph"
+          edges:
+            - source: "user_a"
+              target: "doc_1"
+            - source: "user_b"
+              target: "doc_1"
+            - source: "user_c"
+              target: "doc_2"
+            - source: "doc_1"
+              target: "topic_ai"
+            - source: "doc_2"
+              target: "topic_ml"
+            - source: "topic_ai"
+              target: "topic_ml"
+        timeout_s: 10
+
+      # Step 4: Detect communities using algorithm
+      - shop: mcp
+        provider: networkx
+        tool: community_detection
+        params:
+          graph_id: "entity_graph"
+          algorithm: "louvain"
+        timeout_s: 30
+
+      # Step 5: Visualize graph with communities
+      - shop: mcp
+        provider: networkx
+        tool: visualize_graph
+        params:
+          graph_id: "entity_graph"
+          layout: "spring"
+          show_labels: true
+          color_by: "community"
+        timeout_s: 20
+
+      # Step 6: Export graph for external analysis
+      - shop: mcp
+        provider: networkx
+        tool: export_graph
+        params:
+          graph_id: "entity_graph"
+          format: "gexf"
+          output_path: "./data/entity_graph.gexf"
+        timeout_s: 10
+
+# Budget Configuration
+budget:
+  max_cost_usd: 20.0
+  max_tokens: 200000
+  max_requests: 1000

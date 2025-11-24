@@ -1,0 +1,408 @@
+# BrightOps Agency Pipelines
+# Demonstrates knowledge worker workflows: brainstorms → structured plans
+
+pipelines:
+  # Scenario 1: Turn messy meeting notes into structured project plan
+  meeting_to_plan:
+    description: "Convert unstructured meeting notes into organized project plan with categories and checkpoints"
+    timeout_s: 300
+
+    steps:
+      # Step 1: Load the meeting document
+      - name: load_meeting_doc
+        shop: rag
+        action: load_document
+        params:
+          source: meeting_docs
+          document_path: "${input.meeting_file}"
+        output_key: meeting_content
+
+      # Step 2: Use Sequential Thinking to analyze the meeting
+      - name: analyze_meeting
+        shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: |
+            Analyze this meeting document and identify:
+            1. All features and requirements mentioned
+            2. All action items discussed
+            3. Key decisions made
+            4. Unclear or conflicting information
+
+            Meeting content: ${steps.load_meeting_doc.result}
+          thinkingFormat: "detailed"
+        output_key: analysis
+
+      # Step 3: Apply category_naming to organize features/tasks
+      - name: categorize_items
+        shop: ai_generation
+        technique: category_naming
+        params:
+          context:
+            items: ${steps.analyze_meeting.result}
+            domain: "software_project"
+          instructions: |
+            Organize all features, tasks, and requirements into logical categories.
+            Examples: "Design", "Development", "QA", "Infrastructure", "Content"
+        output_key: categories
+
+      # Step 4: Apply checkpoint_naming to create milestones
+      - name: create_checkpoints
+        shop: ai_generation
+        technique: checkpoint_naming
+        params:
+          context:
+            categories: ${steps.categorize_items.result}
+            timeline_weeks: 16
+          instructions: |
+            Create project checkpoints/milestones from the categorized work.
+            Each checkpoint should have:
+            - Clear deliverable
+            - Estimated duration
+            - Dependencies
+        output_key: checkpoints
+
+      # Step 5: Use Sequential Thinking to validate and refine
+      - name: validate_plan
+        shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: |
+            Review the structured plan:
+            Categories: ${steps.categorize_items.result}
+            Checkpoints: ${steps.create_checkpoints.result}
+
+            Check for:
+            1. Completeness (everything from meeting covered?)
+            2. Logical order (dependencies make sense?)
+            3. Realistic timeline
+            4. Any gaps or conflicts
+          thinkingFormat: "detailed"
+        output_key: validation
+
+      # Step 6: Quality score the final plan
+      - name: score_plan
+        shop: ai_generation
+        technique: quality_scoring
+        params:
+          context:
+            plan:
+              categories: ${steps.categorize_items.result}
+              checkpoints: ${steps.create_checkpoints.result}
+            validation: ${steps.validate_plan.result}
+          criteria:
+            - completeness
+            - clarity
+            - actionability
+            - timeline_realism
+        output_key: quality_score
+
+      # Step 7: Generate final structured plan
+      - name: format_final_plan
+        shop: ai_generation
+        action: format_output
+        params:
+          template: |
+            # Structured Project Plan
+
+            ## Categories
+            ${steps.categorize_items.result}
+
+            ## Checkpoints/Milestones
+            ${steps.create_checkpoints.result}
+
+            ## Validation Notes
+            ${steps.validate_plan.result}
+
+            ## Quality Score
+            ${steps.score_plan.result}
+        output_key: final_plan
+
+  # Scenario 2: Learn client communication patterns and preferences
+  learn_preferences:
+    description: "Extract communication patterns from client emails and store as PatternArtifact"
+    timeout_s: 300
+
+    steps:
+      # Step 1: RAG over all client emails for a specific client
+      - name: retrieve_emails
+        shop: rag
+        action: search
+        params:
+          source: client_emails
+          query: "${input.client_name} communication preferences style"
+          top_k: 10
+        output_key: email_results
+
+      # Step 2: Use Sequential Thinking to analyze patterns
+      - name: analyze_patterns
+        shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: |
+            Analyze these client emails to identify patterns:
+            ${steps.retrieve_emails.result}
+
+            Look for:
+            1. Communication style (formal vs casual, brief vs detailed)
+            2. Response time expectations
+            3. Decision-making speed
+            4. Preferred meeting formats
+            5. Detail level preferences
+            6. Budget sensitivity
+            7. Technical depth expectations
+            8. Recurring requests or concerns
+          thinkingFormat: "detailed"
+        output_key: pattern_analysis
+
+      # Step 3: Store patterns in In-Memoria MCP as graph entities
+      - name: store_client_entity
+        shop: mcp
+        provider: in_memoria
+        tool: create_entities
+        params:
+          entities:
+            - name: "${input.client_name}"
+              entityType: "client"
+              observations:
+                - "${steps.pattern_analysis.result}"
+        output_key: client_entity
+
+      # Step 4: Create relations for different pattern types
+      - name: store_pattern_relations
+        shop: mcp
+        provider: in_memoria
+        tool: create_relations
+        params:
+          relations:
+            - from: "${input.client_name}"
+              to: "communication_style"
+              relationType: "prefers"
+            - from: "${input.client_name}"
+              to: "decision_making"
+              relationType: "exhibits"
+        output_key: pattern_relations
+
+      # Step 5: Convert to PatternArtifact
+      - name: create_pattern_artifact
+        shop: ai_generation
+        action: create_artifact
+        params:
+          artifact_type: "PatternArtifact"
+          data:
+            pattern_name: "${input.client_name}_communication_patterns"
+            category: "communication"
+            confidence: 0.85
+            description: "Communication and working style patterns for ${input.client_name}"
+            pattern_details: ${steps.pattern_analysis.result}
+            source_emails: ${steps.retrieve_emails.result}
+            metadata:
+              provider: "in_memoria"
+              client: "${input.client_name}"
+        output_key: pattern_artifact
+
+      # Step 6: Format summary for humans
+      - name: summarize_patterns
+        shop: ai_generation
+        action: summarize
+        params:
+          content: ${steps.pattern_artifact.result}
+          format: "markdown"
+          max_length: 500
+        output_key: summary
+
+  # Scenario 3: Generate detailed project breakdown from brief one-liner
+  project_breakdown:
+    description: "Expand a brief project idea into detailed breakdown with categories and checkpoints"
+    timeout_s: 300
+
+    steps:
+      # Step 1: Use Sequential Thinking to expand the one-liner
+      - name: expand_scope
+        shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: |
+            Project brief: "${input.project_brief}"
+
+            Expand this into a detailed project scope covering:
+            1. Core features (MVP)
+            2. User flows
+            3. Technical architecture needs
+            4. Design requirements
+            5. Integration points
+            6. Testing requirements
+            7. Deployment considerations
+          thinkingFormat: "detailed"
+        output_key: expanded_scope
+
+      # Step 2: Explore different architectural approaches
+      - name: explore_architecture
+        shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: |
+            Based on the expanded scope, consider different technical approaches:
+            ${steps.expand_scope.result}
+
+            Evaluate options for:
+            - Frontend framework
+            - Backend architecture
+            - Database choice
+            - Hosting platform
+            - API design
+          branchFromThought: 0
+        output_key: architecture_options
+
+      # Step 3: Apply category_naming to organize work streams
+      - name: categorize_work
+        shop: ai_generation
+        technique: category_naming
+        params:
+          context:
+            expanded_scope: ${steps.expand_scope.result}
+            architecture: ${steps.explore_architecture.result}
+          instructions: |
+            Organize all work into categories representing different work streams.
+            Categories should be:
+            - Parallelizable where possible
+            - Clearly scoped
+            - Assigned to skill sets (design, frontend, backend, etc.)
+        output_key: work_categories
+
+      # Step 4: Apply checkpoint_naming for phased delivery
+      - name: create_milestones
+        shop: ai_generation
+        technique: checkpoint_naming
+        params:
+          context:
+            categories: ${steps.categorize_work.result}
+            project_brief: "${input.project_brief}"
+            timeline_estimate: "${input.timeline_weeks:16}"
+          instructions: |
+            Create phased delivery plan with clear milestones.
+            Each phase should:
+            - Deliver working functionality
+            - Enable client feedback
+            - Build on previous phases
+            - Have realistic time estimates
+        output_key: delivery_milestones
+
+      # Step 5: Estimate effort and timeline
+      - name: estimate_effort
+        shop: mcp
+        provider: sequential_thinking
+        tool: sequential_thinking
+        params:
+          thought: |
+            Based on the work breakdown:
+            Categories: ${steps.categorize_work.result}
+            Milestones: ${steps.delivery_milestones.result}
+
+            Provide:
+            1. Effort estimate (person-weeks) for each category
+            2. Timeline estimate accounting for dependencies
+            3. Team composition needed
+            4. Budget estimate (assuming $150/hour avg rate)
+            5. Risk factors that could impact estimates
+          thinkingFormat: "detailed"
+          revisesThought: 0
+        output_key: estimates
+
+      # Step 6: Quality check the breakdown
+      - name: quality_check
+        shop: ai_generation
+        technique: quality_scoring
+        params:
+          context:
+            breakdown:
+              categories: ${steps.categorize_work.result}
+              milestones: ${steps.delivery_milestones.result}
+              estimates: ${steps.estimate_effort.result}
+          criteria:
+            - completeness
+            - clarity
+            - feasibility
+            - client_value
+        output_key: quality_score
+
+      # Step 7: Generate final project breakdown document
+      - name: generate_breakdown
+        shop: ai_generation
+        action: format_output
+        params:
+          template: |
+            # Project Breakdown: ${input.project_brief}
+
+            ## Executive Summary
+            ${steps.expand_scope.result}
+
+            ## Technical Architecture
+            ${steps.explore_architecture.result}
+
+            ## Work Stream Categories
+            ${steps.categorize_work.result}
+
+            ## Delivery Milestones
+            ${steps.delivery_milestones.result}
+
+            ## Effort & Timeline Estimates
+            ${steps.estimate_effort.result}
+
+            ## Quality Assessment
+            Score: ${steps.quality_score.result}
+
+            ## Next Steps
+            1. Client review and feedback
+            2. Refine scope based on budget
+            3. Finalize technical decisions
+            4. Begin discovery phase
+        output_key: project_breakdown
+
+  # Helper pipeline: Index all documents for RAG
+  index_documents:
+    description: "Index all documents in the data directories for vector search"
+    timeout_s: 600
+
+    steps:
+      - name: chunk_meetings
+        shop: rag
+        technique: chunker
+        params:
+          source: meeting_docs
+          chunk_size: 500
+          chunk_overlap: 50
+
+      - name: chunk_emails
+        shop: rag
+        technique: chunker
+        params:
+          source: client_emails
+          chunk_size: 500
+          chunk_overlap: 50
+
+      - name: chunk_specs
+        shop: rag
+        technique: chunker
+        params:
+          source: project_specs
+          chunk_size: 500
+          chunk_overlap: 50
+
+      - name: embed_all
+        shop: rag
+        technique: embedder
+        params:
+          chunks: ${steps.chunk_meetings.result},${steps.chunk_emails.result},${steps.chunk_specs.result}
+
+      - name: store_vectors
+        shop: rag
+        action: store
+        params:
+          embeddings: ${steps.embed_all.result}
+          vector_store: default

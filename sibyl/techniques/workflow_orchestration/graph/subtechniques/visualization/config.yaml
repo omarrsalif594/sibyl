@@ -1,0 +1,4 @@
+subtechnique: visualization
+description: "Graph visualization"
+default_implementation: graphviz
+enabled: true

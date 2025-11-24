@@ -1,0 +1,4 @@
+subtechnique: graph_backend
+description: "Graph storage backends"
+default_implementation: networkx
+enabled: true

@@ -1,0 +1,66 @@
+# =============================================================================
+# Prometheus Configuration for Sibyl MCP Server
+# =============================================================================
+# Scrapes metrics from Sibyl application and system components
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'sibyl-cluster'
+    environment: '${ENVIRONMENT:-development}'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Sibyl MCP Server (development)
+  - job_name: 'sibyl-dev'
+    static_configs:
+      - targets: ['sibyl-dev:9090']
+        labels:
+          service: 'sibyl'
+          mode: 'development'
+    scrape_interval: 10s
+
+  # Sibyl MCP Server (production)
+  - job_name: 'sibyl-prod'
+    static_configs:
+      - targets: ['sibyl-prod:9090']
+        labels:
+          service: 'sibyl'
+          mode: 'production'
+    scrape_interval: 15s
+
+  # Node Exporter (if added later)
+  - job_name: 'node'
+    static_configs:
+      - targets: []
+        # - node-exporter:9100
+        labels:
+          service: 'node-exporter'
+
+  # Docker metrics (if Docker daemon metrics enabled)
+  - job_name: 'docker'
+    static_configs:
+      - targets: []
+        # - host.docker.internal:9323
+        labels:
+          service: 'docker'

@@ -1,0 +1,75 @@
+# Pre-commit hooks for Sibyl v0.1.0
+# This configuration uses relaxed rules appropriate for initial release
+# TODO: Expand rules for v0.2.0 after API stabilizes and tests are written
+
+default_language_version:
+  python: python3.11
+
+repos:
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Format code (replaces black)
+      - id: ruff-format
+        name: ruff format
+        description: Format Python code with ruff
+
+      # Lint with auto-fix for critical issues only
+      - id: ruff
+        name: ruff check
+        description: Lint Python code (critical errors + imports only)
+        args:
+          - --fix
+          - --exit-zero  # Don't block commits, just warn
+
+  # Basic file hygiene hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: trim trailing whitespace
+        description: Remove trailing whitespace at end of lines
+        exclude: \.md$  # Allow trailing spaces in markdown (for line breaks)
+
+      - id: end-of-file-fixer
+        name: fix end of files
+        description: Ensure files end with a newline
+
+      - id: check-yaml
+        name: check yaml syntax
+        description: Validate YAML file syntax
+        args: [--safe]
+
+      - id: check-toml
+        name: check toml syntax
+        description: Validate TOML file syntax
+
+      - id: check-json
+        name: check json syntax
+        description: Validate JSON file syntax
+
+      - id: check-added-large-files
+        name: check for large files
+        description: Prevent accidentally committing large files
+        args: [--maxkb=1000]
+
+      - id: check-merge-conflict
+        name: check for merge conflicts
+        description: Check for merge conflict strings
+
+      - id: check-case-conflict
+        name: check for case conflicts
+        description: Check for files with case-insensitive conflicts
+
+      - id: mixed-line-ending
+        name: check line endings
+        description: Ensure consistent line endings (LF)
+        args: [--fix=lf]
+
+# Configuration notes:
+# - Ruff is configured to only check critical rules (F, E9, I) in pyproject.toml
+# - --exit-zero ensures pre-commit doesn't block commits (warnings only)
+# - Developers can bypass with: git commit --no-verify (use sparingly)
+# - Run manually: pre-commit run --all-files
+# - Update hooks: pre-commit autoupdate

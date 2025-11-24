@@ -1,0 +1,83 @@
+{
+  "mode": "ci",
+  "pipelines": [
+    {
+      "company": "northwind_analytics",
+      "error_message": "WorkspaceLoadError: Workspace validation failed for examples/companies/northwind_analytics/config/workspace.yaml:\n  providers -> mcp: Input should be a valid dictionary",
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": null,
+      "pipeline": "revenue_analysis",
+      "runtime_ms": 2879,
+      "status": "failed",
+      "steps_executed": null
+    },
+    {
+      "company": "northwind_analytics",
+      "error_message": "WorkspaceLoadError: Workspace validation failed for examples/companies/northwind_analytics/config/workspace.yaml:\n  providers -> mcp: Input should be a valid dictionary",
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": null,
+      "pipeline": "explain_dashboard",
+      "runtime_ms": 6,
+      "status": "failed",
+      "steps_executed": null
+    },
+    {
+      "company": "riverbank_finance",
+      "error_message": "Skipped in CI mode",
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": null,
+      "pipeline": "code_compliance_check",
+      "runtime_ms": 0,
+      "status": "skipped",
+      "steps_executed": null
+    },
+    {
+      "company": "riverbank_finance",
+      "error_message": "Skipped in CI mode",
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": null,
+      "pipeline": "risk_graph_analysis",
+      "runtime_ms": 0,
+      "status": "skipped",
+      "steps_executed": null
+    },
+    {
+      "company": "vertex_foundry",
+      "error_message": "Skipped in CI mode",
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": null,
+      "pipeline": "hyperparameter_sweep",
+      "runtime_ms": 0,
+      "status": "skipped",
+      "steps_executed": null
+    },
+    {
+      "company": "brightops_agency",
+      "error_message": "Skipped in CI mode",
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": null,
+      "pipeline": "meeting_to_plan",
+      "runtime_ms": 0,
+      "status": "skipped",
+      "steps_executed": null
+    },
+    {
+      "company": "brightops_agency",
+      "error_message": "Skipped in CI mode",
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": null,
+      "pipeline": "learn_preferences",
+      "runtime_ms": 0,
+      "status": "skipped",
+      "steps_executed": null
+    }
+  ],
+  "timestamp": "2025-11-23T21:10:33.276239Z"
+}

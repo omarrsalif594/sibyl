@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints
+
+# Distribution / packaging
+*.whl
+
+# Build artifacts
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+.tmp/
+.cache/
+
+# Secrets and credentials (CRITICAL - never commit these!)
+.env
+.env.local
+.env.*.local
+.secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+.mcp_keys
+api_keys.txt
+*_secrets.yaml
+*_secrets.yml
+secrets.json
+.aws/
+.gcp/
+
+# Database files
+*.duckdb
+*.duckdb.wal
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs (ensure log files are never committed)
+*.log
+logs/
+*.log.*
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pytype
+.pytype/
+
+# Cython debug symbols
+cython_debug/

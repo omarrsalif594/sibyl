@@ -1,0 +1,4 @@
+subtechnique: content_filtering
+description: "Content filtering methods"
+default_implementation: keyword_filter
+enabled: true

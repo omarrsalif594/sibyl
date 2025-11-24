@@ -1,0 +1,16 @@
+# Fixed Size Chunking Configuration
+
+# Chunk size in tokens
+chunk_size: 512
+
+# Overlap between chunks (in tokens)
+overlap: 50
+
+# Whether to split on whitespace
+split_on_whitespace: true
+
+# Whether to respect word boundaries
+respect_word_boundaries: true
+
+# Separator to use when joining chunks
+separator: "\n"

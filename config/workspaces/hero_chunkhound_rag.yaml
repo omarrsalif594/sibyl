@@ -1,0 +1,185 @@
+# Hero Pipeline 1: ChunkHound → Sibyl RAG Q&A over Code
+#
+# This pipeline demonstrates the power of cAST-based code chunking for RAG:
+# 1. Index codebase with ChunkHound's cAST chunking (+4.3 Recall@5)
+# 2. Semantic search for relevant code chunks
+# 3. Transform to production RAG format with full metadata
+# 4. Query the RAG system with enhanced context
+#
+# Use case: Code Q&A, documentation generation, bug finding
+
+name: "hero_chunkhound_rag"
+description: "ChunkHound cAST-based code RAG with Sibyl transformers"
+version: "1.0.0"
+
+providers:
+  chunkhound:
+    transport: "stdio"
+    command: "npx"
+    args: ["-y", "@chunkhound/mcp-server"]
+    env:
+      CHUNKHOUND_INDEX_DIR: "${HOME}/.chunkhound/indexes"
+
+  # Mock RAG provider (replace with actual RAG in production)
+  rag_system:
+    transport: "stdio"
+    command: "python"
+    args: ["-m", "sibyl_rag_server"]
+
+pipelines:
+  # Pipeline 1: Index codebase with cAST chunking
+  index_codebase_with_cast:
+    description: "Index codebase using ChunkHound's cAST strategy"
+    steps:
+      - name: index_code
+        mcp:
+          provider: chunkhound
+          tool: index_codebase
+          params:
+            codebase_path: "{{ input.codebase_path }}"
+            languages: "{{ input.languages | default(['python', 'javascript']) }}"
+            chunk_strategy: "cast"  # Context-aware AST chunking
+            include_context: true
+        output: index_result
+
+      - name: log_index_stats
+        # Log indexing statistics
+        output: stats
+        # stats = index_result["statistics"]
+
+  # Pipeline 2: Semantic code search with cAST chunks
+  semantic_code_search:
+    description: "Search for code using semantic similarity on cAST chunks"
+    steps:
+      - name: search_chunks
+        mcp:
+          provider: chunkhound
+          tool: semantic_search
+          params:
+            query: "{{ input.search_query }}"
+            top_k: "{{ input.top_k | default(20) }}"
+            include_context: true
+            min_score: 0.5
+        output: search_results
+
+      - name: convert_to_chunk_artifacts
+        # In code: [ChunkArtifact.from_mcp_response(r, "chunkhound") for r in search_results]
+        transform: cast_to_chunk_artifacts
+        params:
+          responses: "{{ search_results.chunks }}"
+        output: chunk_artifacts
+
+      - name: convert_to_rag_format
+        # In code: batch_chunks_to_rag(chunk_artifacts, format="enhanced")
+        transform: chunk_to_rag_batch
+        params:
+          chunks: "{{ chunk_artifacts }}"
+          format: "enhanced"  # Full cAST metadata
+          min_line_count: 5   # Filter tiny chunks
+          include_context: true
+        output: rag_chunks
+
+      - name: rank_by_relevance
+        # In code: chunks_to_rag_with_ranking(chunks, top_k=10)
+        transform: rank_rag_chunks
+        params:
+          rag_chunks: "{{ rag_chunks }}"
+          top_k: 10
+        output: top_chunks
+
+  # Pipeline 3: Full Q&A workflow (search + answer)
+  code_qa_workflow:
+    description: "End-to-end code Q&A using cAST chunks"
+    steps:
+      - name: search_relevant_code
+        mcp:
+          provider: chunkhound
+          tool: semantic_search
+          params:
+            query: "{{ input.question }}"
+            top_k: 15
+            include_context: true
+        output: search_results
+
+      - name: transform_to_rag
+        transform: cast_to_enhanced_rag
+        params:
+          cast_results: "{{ search_results.chunks }}"
+          format: "llm"  # LLM-optimized format
+          top_k: 5       # Top 5 most relevant
+        output: context_chunks
+
+      - name: build_qa_prompt
+        # Build prompt with code context
+        transform: build_prompt
+        params:
+          template: |
+            Answer the following question based on the provided code context:
+
+            Question: {{ input.question }}
+
+            Code Context:
+            {% for chunk in context_chunks %}
+            ---
+            File: {{ chunk.metadata.file_path }}:{{ chunk.metadata.start_line }}
+            Type: {{ chunk.metadata.type }}
+            {% if chunk.structured.description %}
+            Description: {{ chunk.structured.description }}
+            {% endif %}
+
+            ```{{ chunk.metadata.language }}
+            {{ chunk.text }}
+            ```
+            {% endfor %}
+
+            Please provide a detailed answer with code examples where appropriate.
+          context: "{{ context_chunks }}"
+        output: qa_prompt
+
+      - name: answer_question
+        mcp:
+          provider: rag_system
+          tool: answer_with_context
+          params:
+            question: "{{ input.question }}"
+            context: "{{ context_chunks }}"
+            prompt: "{{ qa_prompt }}"
+        output: answer
+
+  # Pipeline 4: Continuous indexing (watch for changes)
+  continuous_indexing:
+    description: "Watch codebase and incrementally update cAST index"
+    steps:
+      - name: watch_for_changes
+        mcp:
+          provider: chunkhound
+          tool: watch_directory
+          params:
+            directory: "{{ input.codebase_path }}"
+            file_patterns: ["*.py", "*.js", "*.ts"]
+        output: changed_files
+
+      - name: incremental_index
+        mcp:
+          provider: chunkhound
+          tool: index_files
+          params:
+            file_paths: "{{ changed_files }}"
+            chunk_strategy: "cast"
+        output: index_update
+
+# Example usage:
+#
+# 1. Index a codebase:
+#    sibyl run hero_chunkhound_rag:index_codebase_with_cast \
+#      --input codebase_path=/path/to/project \
+#      --input languages='["python"]'
+#
+# 2. Search for code:
+#    sibyl run hero_chunkhound_rag:semantic_code_search \
+#      --input search_query="authentication logic" \
+#      --input top_k=10
+#
+# 3. Ask a question:
+#    sibyl run hero_chunkhound_rag:code_qa_workflow \
+#      --input question="How does the authentication system work?"

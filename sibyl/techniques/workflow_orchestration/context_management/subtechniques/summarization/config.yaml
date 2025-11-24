@@ -1,0 +1,4 @@
+subtechnique: summarization
+description: "Context summarization"
+default_implementation: extractive
+enabled: true

@@ -1,0 +1,57 @@
+# Hero Pipeline 1: Sequential Thinking with Loops (C1.1)
+# Demonstrates iterative reasoning using loop control flow
+
+name: loop-reasoning-pipeline
+description: "Sequential thinking pipeline with iterative refinement using loops"
+version: "1.0"
+
+providers:
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+
+shops:
+  ai_generation:
+    techniques:
+      reason: "ai_generation.reasoning:chain_of_thought"
+      refine: "ai_generation.refinement:iterative"
+
+pipelines:
+  sequential_reasoning:
+    shop: ai_generation
+    entrypoint: "reasoning.run"
+    description: "Multi-step reasoning with loop-based refinement"
+    timeout_s: 120
+    steps:
+      # Step 1: Initialize reasoning context
+      - use: ai_generation.reason
+        config:
+          prompt_template: "Initial analysis of: {{ input.query }}"
+
+      # Step 2: Iterative refinement loop
+      - loop:
+          for_each: "{{ context.reasoning_steps }}"
+          var: "step"
+          max_iterations: 5
+          while_condition: "{{ context.confidence < 0.9 }}"
+          break_on: "{{ step.is_final }}"
+          steps:
+            - use: ai_generation.refine
+              config:
+                previous_step: "{{ step }}"
+                iteration: "{{ loop.iteration }}"
+
+mcp:
+  tools:
+    - name: "sequential_reasoning"
+      description: "Multi-step reasoning with iterative refinement"
+      pipeline: "sequential_reasoning"
+      input_schema:
+        type: "object"
+        properties:
+          query:
+            type: "string"
+            description: "Query to reason about"
+        required: ["query"]

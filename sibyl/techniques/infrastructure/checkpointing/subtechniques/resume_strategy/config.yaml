@@ -1,0 +1,4 @@
+subtechnique: resume_strategy
+description: "Resume strategies"
+default_implementation: full_resume
+enabled: true

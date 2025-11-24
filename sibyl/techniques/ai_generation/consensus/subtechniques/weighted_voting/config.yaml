@@ -1,0 +1,4 @@
+subtechnique: weighted_voting
+description: "Confidence and role-weighted voting"
+default_implementation: confidence_weighted
+enabled: true

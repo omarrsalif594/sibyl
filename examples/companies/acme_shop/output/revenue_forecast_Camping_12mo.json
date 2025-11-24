@@ -1,0 +1,393 @@
+{
+  "category": "Camping",
+  "forecast_periods": 12,
+  "historical_data": {
+    "data": [
+      {
+        "timestamp": "2023-01-01T00:00:00",
+        "value": 989.94,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-02-01T00:00:00",
+        "value": 1469.89,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-03-01T00:00:00",
+        "value": 2899.79,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-04-01T00:00:00",
+        "value": 5519.729999999998,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-05-01T00:00:00",
+        "value": 4019.78,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-06-01T00:00:00",
+        "value": 7039.619999999997,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-07-01T00:00:00",
+        "value": 8399.619999999997,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-08-01T00:00:00",
+        "value": 7419.589999999998,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-09-01T00:00:00",
+        "value": 2809.869999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-10-01T00:00:00",
+        "value": 3729.7799999999993,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-11-01T00:00:00",
+        "value": 4299.740000000001,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2023-12-01T00:00:00",
+        "value": 1499.91,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-01-01T00:00:00",
+        "value": 1389.93,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-02-01T00:00:00",
+        "value": 1459.88,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-03-01T00:00:00",
+        "value": 2189.88,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-04-01T00:00:00",
+        "value": 5049.75,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-05-01T00:00:00",
+        "value": 4269.799999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-06-01T00:00:00",
+        "value": 5919.69,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-07-01T00:00:00",
+        "value": 6429.689999999999,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-08-01T00:00:00",
+        "value": 10489.559999999998,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-09-01T00:00:00",
+        "value": 4249.75,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-10-01T00:00:00",
+        "value": 4609.74,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-11-01T00:00:00",
+        "value": 3089.83,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      },
+      {
+        "timestamp": "2024-12-01T00:00:00",
+        "value": 1039.92,
+        "confidence_lower": null,
+        "confidence_upper": null,
+        "properties": {
+          "category": "Camping",
+          "is_historical": true
+        }
+      }
+    ],
+    "frequency": "monthly",
+    "metadata": {
+      "source": "acme_shop_orders",
+      "category": "Camping",
+      "unit": "USD",
+      "metric": "revenue"
+    }
+  },
+  "forecast_data": {
+    "data": [
+      {
+        "timestamp": "2024-12-31T00:00:00",
+        "value": 99.13750000000023,
+        "confidence_lower": 84.2668750000002,
+        "confidence_upper": 114.00812500000026,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-01-30T00:00:00",
+        "value": -529.6689999999995,
+        "confidence_lower": -450.21864999999957,
+        "confidence_upper": -609.1193499999995,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-03-01T00:00:00",
+        "value": -1654.9649999999992,
+        "confidence_lower": -1406.7202499999994,
+        "confidence_upper": -1903.209749999999,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-03-31T00:00:00",
+        "value": -2553.259999999999,
+        "confidence_lower": -2170.270999999999,
+        "confidence_upper": -2936.248999999999,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-04-30T00:00:00",
+        "value": -3451.5549999999985,
+        "confidence_lower": -2933.8217499999987,
+        "confidence_upper": -3969.2882499999982,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-05-30T00:00:00",
+        "value": -4349.8499999999985,
+        "confidence_lower": -3697.3724999999986,
+        "confidence_upper": -5002.3274999999985,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-06-29T00:00:00",
+        "value": -6822.588499999997,
+        "confidence_lower": -5799.200224999998,
+        "confidence_upper": -7845.976774999996,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-07-29T00:00:00",
+        "value": -7990.371999999998,
+        "confidence_lower": -6791.8161999999975,
+        "confidence_upper": -9188.927799999998,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-08-28T00:00:00",
+        "value": -9158.155499999997,
+        "confidence_lower": -7784.432174999998,
+        "confidence_upper": -10531.878824999996,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-09-27T00:00:00",
+        "value": -7943.029999999997,
+        "confidence_lower": -6751.575499999997,
+        "confidence_upper": -9134.484499999997,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-10-27T00:00:00",
+        "value": -8841.324999999997,
+        "confidence_lower": -7515.1262499999975,
+        "confidence_upper": -10167.523749999997,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      },
+      {
+        "timestamp": "2025-11-26T00:00:00",
+        "value": -9739.619999999997,
+        "confidence_lower": -8278.676999999998,
+        "confidence_upper": -11200.562999999996,
+        "properties": {
+          "is_forecast": true,
+          "model": "simulated_prophet"
+        }
+      }
+    ],
+    "frequency": "monthly",
+    "metadata": {
+      "provider": "chronulus",
+      "model": "prophet",
+      "mae": 250.5,
+      "forecast_horizon": 12,
+      "training_samples": 24
+    }
+  },
+  "report": "================================================================================\nACME SHOP - REVENUE FORECAST REPORT\n================================================================================\n\nCategory: Camping\nGenerated: 2025-11-22 18:06:49\n\n--------------------------------------------------------------------------------\nHISTORICAL DATA\n--------------------------------------------------------------------------------\nTime Series: 2023-01-01 to 2024-12-01\nFrequency: monthly\nPoints: 24\nMin: $989.94, Max: $10489.56, Avg: $4178.53\n\nSample Points:\n  2023-01: $989.94\n  2023-05: $4019.78\n  2023-09: $2809.87\n  2024-01: $1389.93\n  2024-05: $4269.80\n  2024-09: $4249.75\n\n--------------------------------------------------------------------------------\nFORECAST\n--------------------------------------------------------------------------------\nTime Series: 2024-12-31 to 2025-11-26\nFrequency: monthly\nPoints: 12\nMin: $-9739.62, Max: $99.14, Avg: $-5244.60\n\nSample Points:\n  2024-12: $99.14 (CI: $84.27-$114.01)\n  2025-01: $-529.67 (CI: $-450.22-$-609.12)\n  2025-03: $-1654.96 (CI: $-1406.72-$-1903.21)\n  2025-03: $-2553.26 (CI: $-2170.27-$-2936.25)\n  2025-04: $-3451.55 (CI: $-2933.82-$-3969.29)\n  2025-05: $-4349.85 (CI: $-3697.37-$-5002.33)\n  2025-06: $-6822.59 (CI: $-5799.20-$-7845.98)\n  2025-07: $-7990.37 (CI: $-6791.82-$-9188.93)\n  2025-08: $-9158.16 (CI: $-7784.43-$-10531.88)\n  2025-09: $-7943.03 (CI: $-6751.58-$-9134.48)\n  2025-10: $-8841.32 (CI: $-7515.13-$-10167.52)\n  2025-11: $-9739.62 (CI: $-8278.68-$-11200.56)\n\n--------------------------------------------------------------------------------\nKEY INSIGHTS\n--------------------------------------------------------------------------------\n\u2022 Last historical month revenue: $1,039.92\n\u2022 Average forecasted monthly revenue: $-5,244.60\n\u2022 Expected change: -604.3%\n\u2022 Peak forecasted month: December 2024 ($99.14)\n\n================================================================================",
+  "metadata": {
+    "pipeline": "revenue_forecast",
+    "timestamp": "2025-11-22T18:06:49.068487",
+    "database": "../examples/companies/acme_shop/data/sql/acme_shop.db"
+  }
+}

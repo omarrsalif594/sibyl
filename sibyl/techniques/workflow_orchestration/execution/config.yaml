@@ -1,0 +1,7 @@
+technique: execution
+description: "Task execution and workflow management"
+version: "1.0.0"
+default_subtechnique: task_executor
+timeout: 300
+max_retries: 3
+enabled: true

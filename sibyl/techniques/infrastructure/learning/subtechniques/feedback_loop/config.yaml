@@ -1,0 +1,4 @@
+subtechnique: feedback_loop
+description: "Feedback loop strategies"
+default_implementation: online
+enabled: true

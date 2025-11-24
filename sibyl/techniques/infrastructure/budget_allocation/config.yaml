@@ -1,0 +1,86 @@
+# Budget Allocation Technique Configuration
+# This technique provides configurable budget allocation across workflow phases
+
+technique:
+  id: budget_allocation
+  name: Budget Allocation
+  description: Configurable budget distribution across workflow phases
+  version: 1.0.0
+  enabled: true
+  category: orchestration
+
+# Configuration parameters (loaded from core config)
+parameters:
+  model_tier_initial:
+    description: Initial model tier (1 = second-best model)
+    type: integer
+    default: 1
+    source: budget.model_tier_initial
+
+  strategy:
+    description: Model selection strategy
+    type: string
+    default: "downgrade_cascade"
+    source: budget.model_selection.strategy
+
+  allow_downgrade:
+    description: Whether to allow model downgrade when budget constrained
+    type: boolean
+    default: true
+    source: budget.model_selection.allow_downgrade
+
+  phase_allocation_planning:
+    description: Budget allocation for planning phase (0.0-1.0)
+    type: float
+    default: 0.15
+    source: budget.phase_allocation.planning
+
+  phase_allocation_execution:
+    description: Budget allocation for execution phase (0.0-1.0)
+    type: float
+    default: 0.70
+    source: budget.phase_allocation.execution
+
+  phase_allocation_validation:
+    description: Budget allocation for validation phase (0.0-1.0)
+    type: float
+    default: 0.15
+    source: budget.phase_allocation.validation
+
+# Subtechniques
+subtechniques:
+  - id: phase_based
+    name: Phase-Based Allocation
+    description: Allocate budget based on workflow phases
+    enabled: true
+    default: true
+
+  - id: adaptive
+    name: Adaptive Allocation
+    description: Dynamically adjust budget based on phase needs
+    enabled: false
+    default: false
+
+  - id: priority_weighted
+    name: Priority-Weighted Allocation
+    description: Allocate budget based on task priority
+    enabled: false
+    default: false
+
+# Validation rules
+validation:
+  model_tier_initial:
+    min: 0
+    max: 3
+  phase_allocation_planning:
+    min: 0.0
+    max: 1.0
+  phase_allocation_execution:
+    min: 0.0
+    max: 1.0
+  phase_allocation_validation:
+    min: 0.0
+    max: 1.0
+  total_allocation:
+    requirement: "planning + execution + validation must equal 1.0"
+    tolerance: 0.01

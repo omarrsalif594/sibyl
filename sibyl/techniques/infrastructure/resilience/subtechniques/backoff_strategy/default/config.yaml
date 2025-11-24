@@ -1,0 +1,10 @@
+implementation: exponential_jitter
+description: |
+  Exponential backoff with jitter for retry delays.
+  Original logic from infrastructure/router.py:270,280
+
+parameters:
+  base_delay: 1.0
+  max_delay: 60.0
+  jitter_percent: 20
+  exponential_base: 2

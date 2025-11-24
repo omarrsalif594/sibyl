@@ -1,0 +1,4 @@
+subtechnique: react
+description: "ReAct pattern implementation"
+default_implementation: react_pattern
+enabled: true

@@ -1,0 +1,11 @@
+implementation: threshold_based
+description: |
+  Relevance scoring using threshold-based approach.
+  Original logic from agents/search.py:249-252
+
+parameters:
+  high_threshold: 0.8
+  medium_threshold: 0.5
+  high_score: 0.8
+  medium_score: 0.5
+  low_score: 0.2

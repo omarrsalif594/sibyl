@@ -1,0 +1,111 @@
+# Vertex Foundry Workspace Configuration
+# ML Platform Engineering - Experiment Tracking & Optimization
+
+workspace:
+  name: vertex_foundry
+  version: "1.0.0"
+  description: "ML platform for experiment tracking, hyperparameter tuning, and model deployment"
+
+# MCP Connections for ML Workflows
+connections:
+  # Conductor MCP - Workflow orchestration for distributed training jobs
+  conductor:
+    type: mcp
+    server: conductor
+    capabilities:
+      - workflow_orchestration
+      - job_scheduling
+      - distributed_execution
+      - progress_tracking
+    config:
+      endpoint: "localhost:8080"
+      timeout_seconds: 3600
+      max_parallel_jobs: 10
+
+  # Deep Code Reasoning MCP - Code analysis and debugging
+  code_analyzer:
+    type: mcp
+    server: deep_code_reasoning
+    capabilities:
+      - static_analysis
+      - bug_detection
+      - code_understanding
+      - pattern_matching
+    config:
+      model: "claude-sonnet-4-5"
+      analysis_depth: deep
+
+  # Solver MCP - Optimization and resource allocation
+  solver:
+    type: mcp
+    server: solver
+    capabilities:
+      - hyperparameter_optimization
+      - resource_allocation
+      - constraint_solving
+      - search_space_exploration
+    config:
+      algorithm: "bayesian_optimization"
+      max_iterations: 100
+
+# Data sources for experiments
+data_sources:
+  experiments:
+    type: filesystem
+    path: "data/experiments"
+    includes:
+      - "*.yaml"
+      - "*.json"
+      - "*.log"
+
+  code:
+    type: filesystem
+    path: "data/code"
+    includes:
+      - "*.py"
+
+  runs:
+    type: filesystem
+    path: "data/runs"
+    includes:
+      - "*.json"
+
+# Runtime configuration
+runtime:
+  # Feature flags
+  features:
+    pollable_jobs: true
+    job_streaming: true
+    session_handles: true
+    auto_retry: true
+
+  # Job polling configuration
+  polling:
+    initial_delay_ms: 1000
+    max_delay_ms: 10000
+    backoff_multiplier: 1.5
+    max_retries: 50
+
+  # Streaming configuration
+  streaming:
+    chunk_size: 1024
+    buffer_size: 4096
+    flush_interval_ms: 500
+
+# Cost tracking
+cost_management:
+  budget_limits:
+    daily_usd: 500
+    monthly_usd: 10000
+  gpu_pricing:
+    T4: 0.35  # per hour
+    V100: 1.00
+    A100: 2.50
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  output:
+    - console
+    - file: "logs/vertex_foundry.log"

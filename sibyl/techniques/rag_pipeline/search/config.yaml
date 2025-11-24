@@ -1,0 +1,7 @@
+technique: search
+description: "Search and retrieval mechanisms"
+version: "1.0.0"
+default_subtechnique: vector_search
+timeout: 300
+max_retries: 3
+enabled: true

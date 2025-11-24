@@ -1,0 +1,7 @@
+technique: graph
+description: "Graph-based analysis and operations"
+version: "1.0.0"
+default_subtechnique: graph_backend
+timeout: 300
+max_retries: 3
+enabled: true

@@ -1,0 +1,4 @@
+subtechnique: early_stopping
+description: "Early stopping conditions"
+default_implementation: confidence_threshold
+enabled: true

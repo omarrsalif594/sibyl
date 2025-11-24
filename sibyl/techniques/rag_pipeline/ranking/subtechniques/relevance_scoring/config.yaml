@@ -1,0 +1,4 @@
+subtechnique: relevance_scoring
+description: "Relevance scoring"
+default_implementation: search_agent
+enabled: true

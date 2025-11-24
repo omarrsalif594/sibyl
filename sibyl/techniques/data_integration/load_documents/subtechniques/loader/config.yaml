@@ -1,0 +1,4 @@
+subtechnique: loader
+description: "Document loading from data providers"
+default_implementation: default
+enabled: true

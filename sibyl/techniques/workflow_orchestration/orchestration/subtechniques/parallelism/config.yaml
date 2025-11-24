@@ -1,0 +1,4 @@
+subtechnique: parallelism
+description: "Parallel execution strategies"
+default_implementation: semaphore
+enabled: true

@@ -1,0 +1,4 @@
+subtechnique: quality_scoring
+description: "Quality scoring methods"
+default_implementation: rule_based
+enabled: true

@@ -1,0 +1,294 @@
+# Hero Pipeline 3: AST Server + OXC Parser Cross-Server Workflows
+#
+# This pipeline demonstrates cross-language AST analysis:
+# 1. Parse Python code with AST Server
+# 2. Parse JavaScript code with OXC Parser
+# 3. Normalize both to unified ASTArtifact format
+# 4. Compare structural similarity
+# 5. Detect cross-language patterns
+# 6. Merge for unified analysis
+#
+# Use case: Cross-language refactoring, pattern detection, polyglot analysis
+
+name: "hero_ast_cross_server"
+description: "Cross-server AST workflows with unified normalization"
+version: "1.0.0"
+
+providers:
+  ast_server:
+    transport: "stdio"
+    command: "npx"
+    args: ["-y", "ast-server"]
+    env:
+      AST_SERVER_PORT: "3000"
+
+  oxc_parser:
+    transport: "stdio"
+    command: "npx"
+    args: ["-y", "@oxc-parser/mcp-server"]
+    env:
+      OXC_PARSER_MODE: "fast"
+
+pipelines:
+  # Pipeline 1: Cross-language function comparison
+  compare_python_js_functions:
+    description: "Compare Python and JavaScript function implementations"
+    steps:
+      - name: parse_python
+        mcp:
+          provider: ast_server
+          tool: parse_file
+          params:
+            file_path: "{{ input.python_file }}"
+            include_locations: true
+        output: python_ast_raw
+
+      - name: normalize_python_ast
+        # In code: normalize_ast_server_response(python_ast_raw, input.python_file)
+        transform: normalize_ast_server
+        params:
+          response: "{{ python_ast_raw }}"
+          source_file: "{{ input.python_file }}"
+          preserve_original_types: true
+        output: python_ast
+
+      - name: parse_javascript
+        mcp:
+          provider: oxc_parser
+          tool: parse
+          params:
+            code: "{{ input.js_code }}"
+            language: "javascript"
+        output: js_ast_raw
+
+      - name: normalize_js_ast
+        # In code: normalize_oxc_parser_response(js_ast_raw, input.js_file)
+        transform: normalize_oxc_parser
+        params:
+          response: "{{ js_ast_raw }}"
+          source_file: "{{ input.js_file }}"
+          preserve_original_types: true
+        output: js_ast
+
+      - name: extract_python_functions
+        # In code: python_ast.query("FunctionDef")
+        transform: query_ast
+        params:
+          ast: "{{ python_ast }}"
+          node_type: "FunctionDef"
+        output: python_functions
+
+      - name: extract_js_functions
+        # Normalized type is also "FunctionDef"
+        transform: query_ast
+        params:
+          ast: "{{ js_ast }}"
+          node_type: "FunctionDef"
+        output: js_functions
+
+      - name: compare_structures
+        # In code: compare_asts(python_ast, js_ast)
+        transform: compare_ast_structures
+        params:
+          ast1: "{{ python_ast }}"
+          ast2: "{{ js_ast }}"
+        output: comparison
+
+      - name: generate_report
+        transform: format_comparison_report
+        params:
+          comparison: "{{ comparison }}"
+          python_functions: "{{ python_functions }}"
+          js_functions: "{{ js_functions }}"
+        output: comparison_report
+
+  # Pipeline 2: Polyglot codebase analysis
+  analyze_polyglot_codebase:
+    description: "Analyze codebase with multiple languages"
+    steps:
+      - name: find_python_files
+        # Find all Python files
+        transform: glob_files
+        params:
+          pattern: "{{ input.codebase_path }}/**/*.py"
+        output: python_files
+
+      - name: find_js_files
+        transform: glob_files
+        params:
+          pattern: "{{ input.codebase_path }}/**/*.js"
+        output: js_files
+
+      - name: parse_all_python
+        loop:
+          items: "{{ python_files }}"
+          parallel: true
+          steps:
+            - name: parse_and_normalize
+              mcp:
+                provider: ast_server
+                tool: parse_file
+                params:
+                  file_path: "{{ item }}"
+              transform: normalize_ast_server
+              params:
+                response: "{{ parse_result }}"
+                source_file: "{{ item }}"
+              output: python_asts
+
+      - name: parse_all_js
+        loop:
+          items: "{{ js_files }}"
+          parallel: true
+          steps:
+            - name: parse_and_normalize
+              # Read file first
+              transform: read_file
+              params:
+                path: "{{ item }}"
+              output: js_code
+            - name: parse
+              mcp:
+                provider: oxc_parser
+                tool: parse
+                params:
+                  code: "{{ js_code }}"
+              transform: normalize_oxc_parser
+              params:
+                response: "{{ parse_result }}"
+                source_file: "{{ item }}"
+              output: js_asts
+
+      - name: merge_all_asts
+        # In code: merge_asts(*python_asts, *js_asts, merge_strategy="separate_roots")
+        transform: merge_ast_artifacts
+        params:
+          asts: "{{ python_asts + js_asts }}"
+          merge_strategy: "separate_roots"
+        output: merged_ast
+
+      - name: analyze_merged
+        # Query unified AST
+        transform: analyze_unified_ast
+        params:
+          ast: "{{ merged_ast }}"
+          queries:
+            - type: "FunctionDef"
+            - type: "ClassDef"
+            - type: "Import"
+        output: analysis
+
+      - name: generate_codebase_summary
+        transform: summarize_codebase
+        params:
+          analysis: "{{ analysis }}"
+          python_count: "{{ python_files | length }}"
+          js_count: "{{ js_files | length }}"
+        output: summary
+
+  # Pipeline 3: Cross-language pattern detection
+  detect_cross_language_patterns:
+    description: "Detect similar patterns across Python and JavaScript"
+    steps:
+      - name: load_python_asts
+        # Reuse from previous pipeline
+        pipeline: analyze_polyglot_codebase
+        params:
+          input: "{{ input }}"
+        output: polyglot_analysis
+
+      - name: extract_function_signatures
+        # Extract all function signatures (name, params, return type)
+        transform: extract_signatures
+        params:
+          ast: "{{ polyglot_analysis.merged_ast }}"
+        output: signatures
+
+      - name: cluster_by_similarity
+        # Group similar functions across languages
+        transform: cluster_functions
+        params:
+          signatures: "{{ signatures }}"
+          similarity_threshold: 0.7
+        output: clusters
+
+      - name: identify_patterns
+        # Find common patterns (e.g., "authentication", "logging")
+        transform: identify_code_patterns
+        params:
+          clusters: "{{ clusters }}"
+          min_cluster_size: 3
+        output: patterns
+
+  # Pipeline 4: Refactoring validation
+  validate_refactoring:
+    description: "Validate that refactored code maintains structure"
+    steps:
+      - name: parse_original
+        mcp:
+          provider: ast_server
+          tool: parse_file
+          params:
+            file_path: "{{ input.original_file }}"
+        transform: normalize_ast_server
+        params:
+          response: "{{ parse_result }}"
+          source_file: "{{ input.original_file }}"
+        output: original_ast
+
+      - name: parse_refactored
+        mcp:
+          provider: ast_server
+          tool: parse_file
+          params:
+            file_path: "{{ input.refactored_file }}"
+        transform: normalize_ast_server
+        params:
+          response: "{{ parse_result }}"
+          source_file: "{{ input.refactored_file }}"
+        output: refactored_ast
+
+      - name: compare_structures
+        transform: compare_ast_structures
+        params:
+          ast1: "{{ original_ast }}"
+          ast2: "{{ refactored_ast }}"
+          compare_locations: false  # Ignore line/col changes
+        output: structural_comparison
+
+      - name: validate_similarity
+        # Check that similarity is high (structure preserved)
+        transform: validate_threshold
+        params:
+          value: "{{ structural_comparison.structural_similarity }}"
+          min_threshold: 0.90  # 90% structural similarity
+          error_message: "Refactoring changed structure too much"
+        output: validation_result
+
+      - name: identify_changes
+        transform: diff_asts
+        params:
+          original: "{{ original_ast }}"
+          refactored: "{{ refactored_ast }}"
+        output: changes
+
+# Example usage:
+#
+# 1. Compare Python and JS functions:
+#    sibyl run hero_ast_cross_server:compare_python_js_functions \
+#      --input python_file=auth.py \
+#      --input js_file=auth.js \
+#      --input js_code="$(cat auth.js)"
+#
+# 2. Analyze polyglot codebase:
+#    sibyl run hero_ast_cross_server:analyze_polyglot_codebase \
+#      --input codebase_path=/path/to/project
+#
+# 3. Detect cross-language patterns:
+#    sibyl run hero_ast_cross_server:detect_cross_language_patterns \
+#      --input codebase_path=/path/to/project
+#
+# 4. Validate refactoring:
+#    sibyl run hero_ast_cross_server:validate_refactoring \
+#      --input original_file=old_version.py \
+#      --input refactored_file=new_version.py

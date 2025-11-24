@@ -1,0 +1,69 @@
+technique: consensus
+description: "Multi-agent consensus decision-making for high-stakes operations"
+version: "1.0.0"
+default_subtechnique: quorum_voting
+default_implementation: five_agent
+timeout: 300
+max_retries: 3
+enabled: true
+
+# Global consensus settings
+min_confidence_threshold: 0.7
+enable_checkpointing: true
+enable_metrics: true
+
+# Quorum voting subtechnique configuration
+quorum_voting:
+  description: "Multi-agent k-voting consensus with fallbacks and red-flag detection"
+  default_implementation: five_agent
+  enabled: true
+
+  # Voting settings
+  k_voting: 3
+  consensus_threshold: 0.7
+  enable_fallbacks: true
+  enable_red_flags: true
+  max_voting_rounds: 3
+
+  # Agent settings (for five_agent implementation)
+  agents:
+    diagnosis:
+      model: "claude-sonnet-4.5"
+      max_tokens: 1000
+      temperature: 0.3
+    strategy:
+      model: "claude-sonnet-4.5"
+      max_tokens: 500
+      temperature: 0.3
+    location:
+      model: "claude-sonnet-4.5"
+      max_tokens: 800
+      temperature: 0.3
+    fix:
+      model: "claude-sonnet-4.5"
+      max_tokens: 1500
+      temperature: 0.3
+    validation:
+      model: "claude-sonnet-4.5"
+      max_tokens: 800
+      temperature: 0.3
+
+  # Budget per step (tokens)
+  budget_ceilings:
+    diagnosis: 5000
+    strategy: 3000
+    location: 4000
+    fix: 8000
+    validation: 4000
+
+# Weighted voting subtechnique configuration (future)
+weighted_voting:
+  description: "Weight votes by confidence scores or agent roles"
+  default_implementation: confidence_weighted
+  enabled: false
+
+# Hybrid consensus subtechnique configuration (future)
+hybrid_consensus:
+  description: "Mix of voting and heuristic decision-making"
+  default_implementation: voting_heuristic_mix
+  enabled: false

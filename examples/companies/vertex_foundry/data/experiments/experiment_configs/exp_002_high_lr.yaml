@@ -1,0 +1,37 @@
+experiment_id: exp_002
+name: "High Learning Rate Exploration"
+description: "Testing higher learning rate for faster convergence"
+
+model:
+  type: ConvNet
+  num_classes: 10
+  dropout_rate: 0.5
+
+hyperparameters:
+  learning_rate: 0.01
+  batch_size: 32
+  epochs: 50
+  weight_decay: 0.0001
+  optimizer: adam
+
+dataset:
+  name: CIFAR10
+  train_split: train
+  val_split: val
+  num_workers: 4
+
+resources:
+  gpu_type: "T4"
+  gpu_count: 1
+  memory_gb: 16
+  estimated_duration_hours: 2
+
+tracking:
+  log_interval: 100
+  checkpoint_interval: 5
+  tensorboard: true
+
+tags:
+  - high_lr
+  - exploration
+  - cifar10

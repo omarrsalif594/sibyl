@@ -1,0 +1,4 @@
+subtechnique: self_consistency
+description: "Self-consistency methods"
+default_implementation: multi_path
+enabled: true

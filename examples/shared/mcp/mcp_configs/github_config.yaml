@@ -1,0 +1,36 @@
+# GitHub MCP Configuration
+# Usage: Include this snippet in your workspace.yaml
+
+mcps:
+  github:
+    enabled: true
+
+    # API credentials
+    token: ${GITHUB_TOKEN}
+
+    # Default repositories
+    repositories:
+      - owner: your-org
+        repo: your-repo
+
+    # API settings
+    base_url: https://api.github.com
+    timeout: 30
+
+    # Rate limiting
+    max_requests_per_hour: 5000
+
+    # Features
+    include_private: false
+
+# Example usage in pipeline:
+# techniques:
+#   - name: fetch_issues
+#     type: data_integration/github_query
+#     config:
+#       mcp_name: github
+#       repository: owner/repo
+#       query_type: issues
+#       filters:
+#         state: open
+#         labels: ["bug"]

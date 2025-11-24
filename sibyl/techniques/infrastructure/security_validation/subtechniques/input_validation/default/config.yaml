@@ -1,0 +1,43 @@
+# Input Validation Configuration
+
+subtechnique:
+  id: input_validation
+  name: Input Validation
+  description: Validate and sanitize user inputs to prevent injection attacks
+  version: 1.0.0
+  enabled: true
+
+# Validation parameters
+parameters:
+  # Sanitization options
+  allow_newlines: true
+  strip_whitespace: true
+  remove_control_chars: true
+
+  # Path validation
+  allow_path_traversal: false
+  check_sql_keywords: true
+
+  # Model name validation
+  allowed_model_name_chars: "a-zA-Z0-9_-"
+
+# Validation patterns
+patterns:
+  sql_keywords:
+    - "DROP"
+    - "DELETE"
+    - "INSERT"
+    - "UPDATE"
+    - "ALTER"
+    - "EXEC"
+    - "EXECUTE"
+    - "SCRIPT"
+    - "UNION"
+    - "SELECT"
+
+  path_traversal:
+    - ".."
+    - "/.."
+    - "\\.."
+    - "../"
+    - "..\\"

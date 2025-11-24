@@ -1,0 +1,151 @@
+name: local-docs-duckdb
+version: "1.0"
+description: "Index local markdown documentation using DuckDB vector store"
+
+# Provider configurations
+providers:
+  # Document source: local markdown files
+  document_sources:
+    docs_local:
+      type: filesystem_markdown
+      config:
+        root: ./docs  # Default to docs directory
+        pattern: "**/*.md"
+
+    test_docs:
+      type: filesystem_markdown
+      config:
+        root: ./tests/data/docs  # Test data directory
+        pattern: "**/*.md"
+
+  # Vector store: DuckDB with vector support
+  vector_store:
+    docs_index:
+      kind: duckdb
+      dsn: "duckdb://./data/docs_vector_index.duckdb"
+      collection_name: doc_embeddings
+      distance_metric: cosine
+      dimension: 384
+
+  # Embeddings: Local sentence transformer (no API key needed)
+  embeddings:
+    default:
+      provider: local_sentence_transformer
+      model: all-MiniLM-L6-v2
+      dimension: 384
+
+  # LLM: For synthesis and Q&A
+  llm:
+    default:
+      provider: openai
+      model: gpt-4
+      api_key_env: OPENAI_API_KEY
+      max_tokens: 2048
+      temperature: 0.7
+
+    # Fallback for testing without API key
+    local:
+      provider: local
+      model: echo
+      max_tokens: 2048
+
+# Shop configurations
+shops:
+  # RAG shop with techniques for document processing
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      embedder: "rag_pipeline.embedding:sentence_transformer"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+      top_k: 5
+      min_score: 0.3
+
+# Pipeline configurations
+pipelines:
+  # Pipeline 1: Build document index from markdown files
+  build_docs_index_from_markdown:
+    shop: rag
+    description: "Index markdown documents into DuckDB vector store"
+    timeout_s: 300
+    steps:
+      # Note: This is a simplified pipeline definition
+      # Actual implementation will load documents, chunk, embed, and store
+      # The integration happens through custom data integration techniques
+      - use: rag.chunker
+        config:
+          chunk_size: 512
+          chunk_overlap: 50
+          source: docs_local  # Reference to document source
+
+      - use: rag.embedder
+        config:
+          batch_size: 32
+          embeddings_provider: default
+
+      # Store vectors in DuckDB
+      # This step would use data_integration.store_vectors
+      - use: data.store_vectors
+        config:
+          vector_store: docs_index
+
+  # Pipeline 2: Query indexed documents
+  qa_over_docs:
+    shop: rag
+    description: "Query indexed documents and generate answers"
+    timeout_s: 60
+    steps:
+      # Retrieve relevant documents
+      - use: rag.retriever
+        config:
+          vector_store: docs_index
+          top_k: 5
+          min_score: 0.3
+
+      # Synthesize answer from retrieved context
+      - use: rag.synthesizer
+        config:
+          llm_provider: default
+          max_tokens: 500
+          temperature: 0.7
+
+# Budget constraints
+budget:
+  max_cost_usd: 1.0
+  max_tokens: 100000
+  max_requests: 50
+
+# MCP tool exposure (optional - for integration with other systems)
+mcp:
+  server_name: "sibyl-local-docs"
+  server_version: "1.0.0"
+  tools:
+    - name: "search_docs"
+      description: "Search local documentation using semantic search"
+      pipeline: "qa_over_docs"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "Search query or question"
+          top_k:
+            type: integer
+            description: "Number of results (default: 5)"
+            default: 5
+        required:
+          - query
+
+    - name: "index_docs"
+      description: "Build or update the document index"
+      pipeline: "build_docs_index_from_markdown"
+      input_schema:
+        type: object
+        properties:
+          source:
+            type: string
+            description: "Document source name (default: docs_local)"
+            default: docs_local

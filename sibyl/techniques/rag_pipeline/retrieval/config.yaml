@@ -1,0 +1,43 @@
+# Retrieval Technique Configuration
+# This configuration is technique-level and applies to all retrieval subtechniques
+
+# Default retrieval parameters
+defaults:
+  # Number of results to retrieve
+  top_k: 10
+
+  # Minimum similarity threshold
+  similarity_threshold: 0.0
+
+  # Whether to include metadata in results
+  include_metadata: true
+
+  # Whether to include scores in results
+  include_scores: true
+
+# Reranking settings
+reranking:
+  # Enable reranking
+  enabled: false
+
+  # Reranking model
+  model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+  # Top k to rerank
+  top_k_rerank: 100
+
+# Filtering
+filtering:
+  # Enable filtering
+  enabled: false
+
+  # Filter fields (will be filled at runtime)
+  filters: {}
+
+# Performance settings
+performance:
+  # Enable caching
+  cache_results: true
+
+  # Cache TTL in seconds
+  cache_ttl: 3600

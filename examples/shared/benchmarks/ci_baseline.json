@@ -1,0 +1,28 @@
+{
+  "mode": "ci",
+  "pipelines": [
+    {
+      "company": "northwind_analytics",
+      "error_message": null,
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": {},
+      "pipeline": "revenue_analysis",
+      "runtime_ms": 0,
+      "status": "skipped",
+      "steps_executed": null
+    },
+    {
+      "company": "northwind_analytics",
+      "error_message": null,
+      "mcp_calls": null,
+      "memory_mb": null,
+      "metadata": {},
+      "pipeline": "explain_dashboard",
+      "runtime_ms": 0,
+      "status": "skipped",
+      "steps_executed": null
+    }
+  ],
+  "timestamp": "2024-11-23T00:00:00Z"
+}

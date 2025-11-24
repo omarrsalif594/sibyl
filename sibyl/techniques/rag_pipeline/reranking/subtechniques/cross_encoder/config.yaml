@@ -1,0 +1,4 @@
+subtechnique: cross_encoder
+description: "Cross-encoder reranking"
+default_implementation: sentence_transformer
+enabled: true

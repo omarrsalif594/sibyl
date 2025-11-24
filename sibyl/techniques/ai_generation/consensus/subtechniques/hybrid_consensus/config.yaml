@@ -1,0 +1,4 @@
+subtechnique: hybrid_consensus
+description: "Hybrid voting and heuristic approaches"
+default_implementation: voting_heuristic_mix
+enabled: true

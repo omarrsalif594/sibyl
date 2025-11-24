@@ -1,0 +1,18 @@
+# Phase-Based Budget Allocation Configuration
+
+subtechnique:
+  id: phase_based
+  name: Phase-Based Allocation
+  description: Allocate budget based on workflow phases
+  version: 1.0.0
+  enabled: true
+
+# Algorithm parameters
+parameters:
+  algorithm: phase_based
+  reallocation_enabled: false  # Allow unused budget reallocation
+  minimum_phase_budget: 0.01   # Minimum budget per phase (USD)
+
+# Performance tuning
+performance:
+  precision: 0.001  # Budget precision in USD

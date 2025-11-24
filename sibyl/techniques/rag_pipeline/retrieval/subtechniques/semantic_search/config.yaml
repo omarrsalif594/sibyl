@@ -1,0 +1,16 @@
+# Semantic Search Configuration
+
+# Number of results to return
+top_k: 10
+
+# Minimum similarity threshold (0-1)
+similarity_threshold: 0.3
+
+# Similarity metric (cosine, dot_product, euclidean)
+similarity_metric: "cosine"
+
+# Whether to include scores in results
+include_scores: true
+
+# Whether to normalize query embedding
+normalize_query: true

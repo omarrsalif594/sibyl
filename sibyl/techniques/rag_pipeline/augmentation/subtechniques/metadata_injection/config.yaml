@@ -1,0 +1,4 @@
+subtechnique: metadata_injection
+description: "Metadata injection strategies"
+default_implementation: schema_metadata
+enabled: true

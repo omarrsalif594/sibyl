@@ -1,0 +1,40 @@
+technique: learning
+description: "Adaptive learning and pattern discovery"
+version: "1.0.0"
+default_subtechnique: learning_algorithm
+timeout: 300
+max_retries: 3
+enabled: true
+
+# Confidence calculation configuration (from hook.py:265-283)
+confidence_calculation:
+  default_implementation: verdict_based
+  verdict_based:
+    green_min_confidence: 0.8    # High confidence for successful fixes
+    red_max_confidence: 0.5       # Lower confidence for failed fixes
+    yellow_confidence: null       # Keep base confidence for partial success
+
+# Fix extraction configuration (from hook.py:252-263)
+fix_extraction:
+  default_implementation: top_n_fixes
+  top_n_fixes:
+    max_fixes: 3                  # Top 3 suggested fixes
+    delimiter: "; "               # Separator between fixes
+    use_feedback_fallback: true   # Use feedback if no fixes available
+
+# Pattern discovery configuration
+pattern_discovery:
+  min_frequency: 3
+  min_success_rate: 0.6
+  min_confidence: 0.8
+  max_patterns: 100
+
+# Keyword recommendation configuration
+keyword_recommendation:
+  min_frequency: 5
+  max_recommendations: 20
+
+# Historical pattern update configuration
+historical_patterns:
+  min_success_rate: 0.7
+  max_patterns_per_category: 50

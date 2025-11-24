@@ -1,0 +1,4 @@
+subtechnique: relevance
+description: "Relevance scoring"
+default_implementation: semantic_similarity
+enabled: true

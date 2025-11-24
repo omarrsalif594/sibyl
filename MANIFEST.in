@@ -1,0 +1,35 @@
+# Include documentation
+include README.md
+include CONTRIBUTING.md
+include CHANGELOG.md
+include LICENSE
+
+# Include templates
+recursive-include templates *.yaml *.yml *.md *.py
+
+# Include knowledge system documentation (user-facing)
+recursive-include knowledge-system *.md *.yaml *.yml
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude .DS_Store
+global-exclude .git*
+global-exclude *.so
+global-exclude *.dylib
+
+# Exclude tests and examples from distribution
+prune tests
+prune examples
+prune docs
+prune .github
+
+# Exclude cache and build artifacts
+prune htmlcov
+prune .pytest_cache
+prune .mypy_cache
+prune .ruff_cache
+prune build
+prune dist
+prune *.egg-info

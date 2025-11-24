@@ -1,0 +1,4 @@
+subtechnique: execution_model
+description: "Execution models for workflows"
+default_implementation: wave_based
+enabled: true

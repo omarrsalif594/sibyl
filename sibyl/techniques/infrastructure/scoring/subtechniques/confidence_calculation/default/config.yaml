@@ -1,0 +1,9 @@
+implementation: weighted_sum
+description: |
+  Confidence calculation using weighted sum of factors.
+  Original logic from agents/planner.py:263-266
+
+parameters:
+  base_confidence: 0.5
+  tool_weight: 0.1
+  max_confidence: 0.9

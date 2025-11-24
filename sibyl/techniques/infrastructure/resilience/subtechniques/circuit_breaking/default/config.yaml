@@ -1,0 +1,8 @@
+implementation: threshold_based
+description: |
+  Circuit breaker using failure threshold.
+  Original logic from infrastructure/router.py:160-162
+
+parameters:
+  failure_threshold: 5
+  cooldown_seconds: 30

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Ollama for local LLM inference
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sibyl-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+    command: serve
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Sibyl MCP Server
+  sibyl-server:
+    build:
+      context: ../..
+      dockerfile: devops/docker/Dockerfile
+    container_name: sibyl-server
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../..:/app
+      - ../../data:/data
+    environment:
+      - SIBYL_MODE=local
+      - LLM_PROVIDER=ollama
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2:3b
+      - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+      - DUCKDB_PATH=/data/retailflow/retailflow.duckdb
+      - MAX_CONCURRENT_WORKFLOWS=2
+      - BATCH_SIZE=10
+      - CACHE_ENABLED=true
+      - ENABLE_MONITORING=false
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ollama-models:
+    driver: local

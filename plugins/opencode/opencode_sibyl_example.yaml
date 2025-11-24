@@ -1,0 +1,151 @@
+# Opencode → Sibyl Command Mapping Configuration
+# ==================================================
+#
+# This file maps Opencode commands to Sibyl workspaces and pipelines.
+# Each command entry specifies:
+#   - workspace: Path to workspace YAML (relative to this file or absolute)
+#   - pipeline: Name of the pipeline to execute
+#   - default_params: Optional default parameters
+#   - description: Optional command description
+#
+# Usage:
+#   1. Define your commands below
+#   2. Load with: OpencodeAdapter("opencode_sibyl_example.yaml")
+#   3. Execute with: adapter.execute("command.name", params={...})
+
+commands:
+  # ============================================================================
+  # Northwind Analytics - BI/Analytics SaaS
+  # ============================================================================
+
+  northwind.data_quality:
+    workspace: "../../examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "revenue_analysis"
+    description: "Analyze revenue trends and answer data quality questions"
+    default_params:
+      time_period: "2024-Q3"
+      # Users can override with custom question at runtime
+
+  northwind.dashboard_explain:
+    workspace: "../../examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "explain_dashboard"
+    description: "Generate plain-English explanation of a dashboard or KPI"
+    default_params:
+      audience: "product_manager"
+      # Users provide dashboard_name at runtime
+
+  northwind.release_notes:
+    workspace: "../../examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "generate_release_notes"
+    description: "Generate release notes from feature docs and changelogs"
+    default_params:
+      format: "markdown"
+      version: "latest"
+
+  # ============================================================================
+  # Vertex Foundry - ML Platform Engineering
+  # ============================================================================
+
+  vertex.job_polling:
+    workspace: "../../examples/companies/vertex_foundry/config/workspace.yaml"
+    pipeline: "hyperparameter_sweep"
+    description: "Launch ML hyperparameter sweep with automatic job polling"
+    default_params:
+      model_type: "classifier"
+      max_experiments: 10
+      # Demonstrates PollableJobHandle feature
+
+  vertex.diagnose:
+    workspace: "../../examples/companies/vertex_foundry/config/workspace.yaml"
+    pipeline: "diagnose_failure"
+    description: "Diagnose failing ML training job using SessionHandle"
+    default_params: {}
+    # Users provide run_id at runtime
+
+  # ============================================================================
+  # BrightOps Agency - Knowledge Work
+  # ============================================================================
+
+  brightops.meeting_to_plan:
+    workspace: "../../examples/companies/brightops_agency/config/workspace.yaml"
+    pipeline: "meeting_to_plan"
+    description: "Convert messy meeting notes into structured project plan"
+    default_params:
+      output_format: "checklist"
+      # Demonstrates category_naming and checkpoint_naming techniques
+
+  brightops.learn_preferences:
+    workspace: "../../examples/companies/brightops_agency/config/workspace.yaml"
+    pipeline: "learn_preferences"
+    description: "Learn client preferences from interactions (PatternArtifact demo)"
+    default_params:
+      client_id: "default"
+      # Demonstrates In-Memoria MCP integration
+
+  # ============================================================================
+  # Acme Shop - E-commerce (Optional)
+  # ============================================================================
+
+  # Uncomment to enable Acme Shop commands:
+  # acme.product_qa:
+  #   workspace: "../../examples/companies/acme_shop/config/workspace.yaml"
+  #   pipeline: "product_qa"
+  #   description: "Answer customer questions about products using RAG"
+  #   default_params:
+  #     category: "all"
+
+  # acme.forecast:
+  #   workspace: "../../examples/companies/acme_shop/config/workspace.yaml"
+  #   pipeline: "revenue_forecast"
+  #   description: "Generate revenue forecast using TimeSeriesArtifact"
+  #   default_params:
+  #     forecast_horizon: 30
+  #     category: "all"
+
+# ============================================================================
+# Configuration Metadata
+# ============================================================================
+
+metadata:
+  version: "1.0"
+  description: "Example Opencode → Sibyl command mappings"
+  author: "Sibyl Plugin Team"
+  updated: "2025-11-22"
+
+# ============================================================================
+# Integration Notes
+# ============================================================================
+#
+# How to wire this into Opencode:
+#
+# 1. Create an Opencode command file (e.g., .opencode/commands/sibyl.js):
+#
+#    const { execSync } = require('child_process');
+#
+#    module.exports = {
+#      commands: {
+#        'sibyl:run': {
+#          description: 'Execute a Sibyl pipeline',
+#          execute: (commandName, params) => {
+#            const result = execSync(
+#              `python -c "from plugins.opencode import execute_command; \
+#               import json; \
+#               result = execute_command('plugins/opencode/opencode_sibyl_example.yaml', \
+#                                        '${commandName}', \
+#                                        ${JSON.stringify(params)}); \
+#               print(json.dumps(result))"`,
+#              { encoding: 'utf-8' }
+#            );
+#            return JSON.parse(result);
+#          }
+#        }
+#      }
+#    };
+#
+# 2. Use from Opencode:
+#    > opencode sibyl:run northwind.data_quality '{"question": "Why is revenue down?"}'
+#
+# 3. Or create individual commands:
+#    > opencode northwind.data_quality '{"question": "Why is revenue down?"}'
+#
+# See docs/plugins/opencode.md for detailed integration guide.

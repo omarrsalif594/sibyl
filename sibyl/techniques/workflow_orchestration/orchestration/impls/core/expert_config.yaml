@@ -1,0 +1,40 @@
+# Expert Agent Configuration
+# Extracted from hardcoded logic in base.py
+
+# Default model and temperature (from base.py:465-466)
+default_model: "claude-sonnet-4-5-20250929"
+default_temperature: 0.0  # Deterministic by default
+
+# Expert confidence calculation (from base.py:594-605)
+confidence_calculation:
+  default_confidence: 0.9  # Default high confidence
+  # Can be customized per expert type
+  per_expert: {}
+
+# Expert coordination workflows (from base.py:349-374)
+# Defines which experts to call and in what order for each phase
+expert_coordination:
+  # Fix phase workflow
+  fix:
+    # Sequential workflow: analyze error, then validate fix
+    - expert_type: sql_error_analyst
+      condition: error  # Only run if 'error' in context
+      query_field: error
+      response_key: analysis
+
+    - expert_type: type_validator
+      condition: proposed_fix  # Only run if 'proposed_fix' in context
+      query_field: proposed_fix
+      response_key: validation
+
+  # Compile phase workflow (add as needed)
+  compile: []
+
+  # Test phase workflow (add as needed)
+  test: []
+
+  # Review phase workflow (add as needed)
+  review: []
+
+  # Default workflow for unknown phases
+  default: []

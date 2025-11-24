@@ -1,0 +1,293 @@
+# Cloud RAG Workspace
+# Production-ready RAG system with cloud LLM and embeddings
+# Requires API keys via environment variables
+
+name: cloud-rag
+version: "1.0"
+description: "Production RAG workspace with cloud providers"
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: openai
+      model: gpt-4
+      api_key_env: OPENAI_API_KEY
+      max_tokens: 4096
+      temperature: 0.7
+
+    fast:
+      provider: openai
+      model: gpt-3.5-turbo
+      api_key_env: OPENAI_API_KEY
+      max_tokens: 2048
+      temperature: 0.5
+
+    anthropic:
+      provider: anthropic
+      model: claude-3-opus-20240229
+      api_key_env: ANTHROPIC_API_KEY
+      max_tokens: 4096
+      temperature: 0.7
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: openai
+      model: text-embedding-3-small
+      api_key_env: OPENAI_API_KEY
+      dimension: 1536
+
+    large:
+      provider: openai
+      model: text-embedding-3-large
+      api_key_env: OPENAI_API_KEY
+      dimension: 3072
+
+  # Vector store configurations
+  vector_store:
+    default:
+      kind: duckdb
+      dsn: "duckdb://./data/cloud_rag_prod.db"
+      collection_name: documents
+      distance_metric: cosine
+
+  # External MCP providers
+  mcp:
+    web_browser:
+      type: http_mcp
+      endpoint: http://localhost:9002
+      tools:
+        - browser.search
+        - browser.navigate
+        - browser.extract_content
+      timeout_s: 30
+
+    filesystem:
+      type: stdio_mcp
+      endpoint: mcp-server-filesystem
+      tools:
+        - read_file
+        - write_file
+        - list_directory
+        - search_files
+      timeout_s: 30
+
+# Shop configurations
+shops:
+  # RAG shop with advanced features
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 1024
+      chunk_overlap: 100
+      top_k: 20
+      rerank_top_k: 5
+
+  # AI Generation shop
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+      refiner: "ai_generation.refinement:iterative"
+    config:
+      max_iterations: 3
+      quality_threshold: 0.8
+
+  # Workflow shop for orchestration
+  workflow:
+    techniques:
+      orchestrator: "workflow.orchestration:sequential"
+      parallel_executor: "workflow.orchestration:parallel"
+    config:
+      max_concurrent: 5
+
+# Pipeline configurations
+pipelines:
+  # Document indexing pipeline
+  index_documents:
+    shop: rag
+    description: "Index documents with embeddings into vector store"
+    timeout_s: 300
+    steps:
+      - use: rag.chunker
+        config:
+          chunk_size: 1024
+          chunk_overlap: 100
+
+  # Basic RAG query
+  query_documents:
+    shop: rag
+    description: "Query documents with semantic search"
+    timeout_s: 60
+    steps:
+      - use: rag.retriever
+        config:
+          top_k: 10
+      - use: rag.synthesizer
+        config:
+          llm_provider: default
+
+  # Advanced RAG with reranking
+  advanced_rag:
+    shop: rag
+    description: "Advanced RAG with retrieval, reranking, and synthesis"
+    timeout_s: 90
+    steps:
+      - use: rag.retriever
+        config:
+          top_k: 20
+      - use: rag.ranker
+        config:
+          rerank_top_k: 5
+          llm_provider: fast  # Use faster model for reranking
+      - use: rag.synthesizer
+        config:
+          llm_provider: default
+
+  # Web research pipeline
+  web_research:
+    shop: workflow
+    description: "Research topic using web search and RAG"
+    timeout_s: 300
+    steps:
+      - use: workflow.orchestrator
+        config:
+          tasks:
+            - web_search
+            - document_retrieval
+            - synthesis
+
+  # Content generation with validation
+  generate_validated_content:
+    shop: ai_generation
+    description: "Generate high-quality content with validation and refinement"
+    timeout_s: 180
+    steps:
+      - use: ai_generation.generator
+        config:
+          llm_provider: default
+      - use: ai_generation.validator
+        config:
+          min_quality: 0.8
+      - use: ai_generation.refiner
+        config:
+          llm_provider: default
+          max_iterations: 3
+
+  # Multi-document synthesis
+  synthesize_documents:
+    shop: rag
+    description: "Synthesize information from multiple documents"
+    timeout_s: 120
+    steps:
+      - use: rag.retriever
+        config:
+          top_k: 15
+      - use: rag.ranker
+        config:
+          rerank_top_k: 10
+      - use: rag.synthesizer
+        config:
+          llm_provider: default
+          synthesis_mode: comprehensive
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-cloud-rag"
+  server_version: "1.0.0"
+  tools:
+    - name: "search_knowledge_base"
+      description: "Search the knowledge base using semantic search. Returns relevant passages with sources."
+      pipeline: "query_documents"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "The search query or question"
+          top_k:
+            type: integer
+            description: "Number of results to return (default: 10)"
+            default: 10
+        required:
+          - query
+
+    - name: "advanced_search"
+      description: "Advanced semantic search with reranking for higher quality results"
+      pipeline: "advanced_rag"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "The search query or question"
+        required:
+          - query
+
+    - name: "research_topic"
+      description: "Comprehensive research on a topic using web search and document retrieval"
+      pipeline: "web_research"
+      input_schema:
+        type: object
+        properties:
+          topic:
+            type: string
+            description: "The research topic"
+          depth:
+            type: string
+            description: "Research depth (quick, standard, comprehensive)"
+            enum:
+              - quick
+              - standard
+              - comprehensive
+            default: standard
+        required:
+          - topic
+
+    - name: "generate_content"
+      description: "Generate high-quality content with automatic validation and refinement"
+      pipeline: "generate_validated_content"
+      input_schema:
+        type: object
+        properties:
+          prompt:
+            type: string
+            description: "Content generation prompt"
+          style:
+            type: string
+            description: "Writing style"
+            enum:
+              - professional
+              - casual
+              - technical
+              - creative
+            default: professional
+          max_tokens:
+            type: integer
+            description: "Maximum tokens to generate"
+            default: 2048
+        required:
+          - prompt
+
+    - name: "synthesize_sources"
+      description: "Synthesize information from multiple sources into a coherent summary"
+      pipeline: "synthesize_documents"
+      input_schema:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "Topic or question to synthesize information about"
+          sources:
+            type: array
+            description: "Optional list of specific sources to include"
+            items:
+              type: string
+        required:
+          - query

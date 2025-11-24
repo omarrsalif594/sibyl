@@ -1,0 +1,7 @@
+technique: validation
+description: "Quality validation and control"
+version: "1.0.0"
+default_subtechnique: validator_composition
+timeout: 300
+max_retries: 3
+enabled: true

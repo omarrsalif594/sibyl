@@ -1,0 +1,263 @@
+# Hero Pipeline 2: Graphiti → NetworkX → Graphiti (with metric annotations)
+#
+# This pipeline demonstrates bidirectional graph analysis:
+# 1. Extract knowledge graph from Graphiti
+# 2. Analyze with NetworkX (PageRank, centrality, communities)
+# 3. Annotate graph with computed metrics
+# 4. Query annotated graph for insights
+# 5. Optionally update Graphiti with new relationships based on metrics
+#
+# Use case: Service dependency analysis, bottleneck detection, community structure
+
+name: "hero_graphiti_networkx"
+description: "Bidirectional Graphiti ↔ NetworkX workflows with metric enrichment"
+version: "1.0.0"
+
+providers:
+  graphiti:
+    transport: "stdio"
+    command: "npx"
+    args: ["-y", "@zep-ai/graphiti-server"]
+    env:
+      GRAPHITI_API_KEY: "${GRAPHITI_API_KEY}"
+
+  # Mock NetworkX provider (or use actual NetworkX MCP if available)
+  networkx_analyzer:
+    transport: "stdio"
+    command: "python"
+    args: ["-m", "networkx_mcp_server"]
+
+pipelines:
+  # Pipeline 1: Full graph analysis workflow
+  analyze_service_dependencies:
+    description: "Analyze microservice dependencies with NetworkX"
+    steps:
+      - name: search_services
+        mcp:
+          provider: graphiti
+          tool: search_nodes
+          params:
+            query: "microservices"
+            limit: 100
+        output: service_nodes
+
+      - name: search_dependencies
+        mcp:
+          provider: graphiti
+          tool: search_facts
+          params:
+            query: "depends on OR calls OR uses"
+            limit: 200
+        output: dependency_edges
+
+      - name: build_graph_artifact
+        # In code: GraphArtifact.from_graphiti_search(service_nodes, dependency_edges)
+        transform: graphiti_to_graph_artifact
+        params:
+          nodes: "{{ service_nodes }}"
+          facts: "{{ dependency_edges }}"
+        output: graph_artifact
+
+      - name: convert_to_networkx
+        # In code: graph_artifact.to_networkx()
+        transform: graph_to_networkx
+        params:
+          graph: "{{ graph_artifact }}"
+        output: nx_graph
+
+      - name: compute_pagerank
+        mcp:
+          provider: networkx_analyzer
+          tool: pagerank
+          params:
+            graph: "{{ nx_graph }}"
+            alpha: 0.85
+        output: pagerank_result
+
+      - name: create_pagerank_artifact
+        # In code: GraphMetricsArtifact.from_mcp_response(pagerank_result, "pagerank")
+        transform: create_metrics_artifact
+        params:
+          response: "{{ pagerank_result }}"
+          algorithm: "pagerank"
+        output: pagerank_metrics
+
+      - name: compute_centrality
+        mcp:
+          provider: networkx_analyzer
+          tool: betweenness_centrality
+          params:
+            graph: "{{ nx_graph }}"
+        output: centrality_result
+
+      - name: create_centrality_artifact
+        transform: create_metrics_artifact
+        params:
+          response: "{{ centrality_result }}"
+          algorithm: "betweenness_centrality"
+        output: centrality_metrics
+
+      - name: annotate_with_pagerank
+        # In code: annotate_graph_with_metric_artifact(graph_artifact, pagerank_metrics)
+        transform: annotate_graph_metrics
+        params:
+          graph: "{{ graph_artifact }}"
+          metrics: "{{ pagerank_metrics }}"
+        output: graph_with_pagerank
+
+      - name: annotate_with_centrality
+        transform: annotate_graph_metrics
+        params:
+          graph: "{{ graph_with_pagerank }}"
+          metrics: "{{ centrality_metrics }}"
+        output: fully_annotated_graph
+
+      - name: extract_critical_services
+        # In code: rank_nodes_by_metric(graph, "pagerank", top_k=10)
+        transform: rank_by_metric
+        params:
+          graph: "{{ fully_annotated_graph }}"
+          metric: "pagerank"
+          top_k: 10
+        output: critical_services
+
+      - name: extract_bottlenecks
+        transform: rank_by_metric
+        params:
+          graph: "{{ fully_annotated_graph }}"
+          metric: "betweenness_centrality"
+          top_k: 10
+        output: bottleneck_services
+
+  # Pipeline 2: Community detection and annotation
+  detect_service_communities:
+    description: "Detect service communities and annotate graph"
+    steps:
+      - name: load_graph
+        mcp:
+          provider: graphiti
+          tool: search_nodes
+          params:
+            query: "{{ input.entity_type | default('services') }}"
+        output: nodes
+
+      - name: load_edges
+        mcp:
+          provider: graphiti
+          tool: search_facts
+          params:
+            query: "relationships"
+        output: edges
+
+      - name: build_graph
+        transform: graphiti_to_graph_artifact
+        params:
+          nodes: "{{ nodes }}"
+          facts: "{{ edges }}"
+        output: graph
+
+      - name: detect_communities
+        mcp:
+          provider: networkx_analyzer
+          tool: louvain_communities
+          params:
+            graph: "{{ graph.to_networkx() }}"
+        output: communities_result
+
+      - name: create_community_artifact
+        transform: create_metrics_artifact
+        params:
+          response: "{{ communities_result }}"
+          algorithm: "louvain"
+          metric_type: "COMMUNITY_DETECTION"
+        output: community_metrics
+
+      - name: annotate_with_communities
+        # In code: annotate_with_communities(graph, community_metrics)
+        transform: annotate_communities
+        params:
+          graph: "{{ graph }}"
+          metrics: "{{ community_metrics }}"
+        output: graph_with_communities
+
+      - name: analyze_communities
+        # Extract community statistics
+        transform: extract_metric_summary
+        params:
+          graph: "{{ graph_with_communities }}"
+          metric_names: ["community_id", "community_size"]
+        output: community_stats
+
+  # Pipeline 3: Update Graphiti with computed metrics
+  enrich_graphiti_with_metrics:
+    description: "Add computed metrics back to Graphiti as node properties"
+    steps:
+      - name: load_and_analyze
+        # Reuse previous pipeline
+        pipeline: analyze_service_dependencies
+        params:
+          input: "{{ input }}"
+        output: analysis_result
+
+      - name: extract_annotated_nodes
+        transform: extract_nodes
+        params:
+          graph: "{{ analysis_result.fully_annotated_graph }}"
+        output: annotated_nodes
+
+      - name: update_graphiti_nodes
+        # Update each node in Graphiti with new properties
+        loop:
+          items: "{{ annotated_nodes }}"
+          steps:
+            - name: update_node
+              mcp:
+                provider: graphiti
+                tool: update_node
+                params:
+                  node_id: "{{ item.id }}"
+                  properties:
+                    pagerank: "{{ item.properties.pagerank }}"
+                    pagerank_rank: "{{ item.properties.pagerank_rank }}"
+                    betweenness_centrality: "{{ item.properties.betweenness_centrality }}"
+
+  # Pipeline 4: Filter and visualize high-importance subgraph
+  extract_critical_subgraph:
+    description: "Extract high-PageRank subgraph for visualization"
+    steps:
+      - name: load_and_annotate
+        pipeline: analyze_service_dependencies
+        params:
+          input: "{{ input }}"
+        output: analysis
+
+      - name: filter_by_pagerank
+        # In code: filter_graph_by_metric(graph, "pagerank", min_value=0.05)
+        transform: filter_graph
+        params:
+          graph: "{{ analysis.fully_annotated_graph }}"
+          metric: "pagerank"
+          min_value: 0.05  # Only high-importance nodes
+        output: filtered_graph
+
+      - name: export_for_visualization
+        transform: graph_to_visualization
+        params:
+          graph: "{{ filtered_graph }}"
+          format: "cytoscape"  # Or "d3", "graphviz"
+        output: viz_data
+
+# Example usage:
+#
+# 1. Analyze service dependencies:
+#    sibyl run hero_graphiti_networkx:analyze_service_dependencies
+#
+# 2. Detect communities:
+#    sibyl run hero_graphiti_networkx:detect_service_communities \
+#      --input entity_type="microservices"
+#
+# 3. Enrich Graphiti with metrics:
+#    sibyl run hero_graphiti_networkx:enrich_graphiti_with_metrics
+#
+# 4. Extract critical subgraph:
+#    sibyl run hero_graphiti_networkx:extract_critical_subgraph

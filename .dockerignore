@@ -1,0 +1,159 @@
+# =============================================================================
+# .dockerignore - Docker Build Context Exclusions
+# =============================================================================
+# Excludes files from the Docker build context to reduce image size and
+# build time. Patterns are the same as .gitignore.
+# =============================================================================
+
+# Git and version control
+.git
+.gitignore
+.gitattributes
+.github
+
+# Python development
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.sublime-project
+.sublime-workspace
+*.iml
+
+# Testing and coverage
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Linting
+.ruff_cache/
+
+# Testing
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+pytest.ini
+
+# Development scripts and utilities
+scripts/
+*.sh
+devops/scripts/
+setup.sh
+activate.sh
+
+# Documentation
+docs/
+*.md
+README.md
+LICENSE
+CHANGELOG.md
+*.rst
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+Makefile
+
+# Build artifacts
+build/
+dist/
+*.whl
+*.tar.gz
+
+# Database files (except schema)
+*.db
+*.sqlite
+*.sqlite3
+duckdb/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.swp
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+.dockerignore
+Dockerfile
+
+# Project-specific
+config/workspaces/*.yaml
+!config/workspaces/prod_web_research.yaml
+examples/
+migration_*.py
+update_*.py
+fix_*.py
+cleanup_*.py
+restore_*.py
+generate_*.py
+create_*.py
+demo_*.py
+test_adapters.py
+test_integration.sh
+test_runtime_demo.py
+test_providers_manual.py
+
+# Dependency files
+uv.lock
+
+# Miscellaneous
+*.pyc
+*.pyo
+circular_imports_data.json
+circular_imports_report.txt

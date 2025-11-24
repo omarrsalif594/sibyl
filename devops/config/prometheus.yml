@@ -1,0 +1,138 @@
+# =============================================================================
+# prometheus.yml - Prometheus Configuration for Sibyl MCP Monitoring
+# =============================================================================
+# Prometheus scrape configuration for collecting metrics from Sibyl MCP
+#
+# To enable:
+# 1. Uncomment Prometheus service in docker-compose.yaml
+# 2. Run: docker-compose up -d
+# 3. Access Prometheus at: http://localhost:9091
+#
+# Metrics collected:
+# - sibyl_pipeline_*: Pipeline execution metrics
+# - sibyl_token_usage_*: Token usage tracking
+# - sibyl_provider_*: Provider-specific metrics
+# - sibyl_error_*: Error tracking and classification
+# =============================================================================
+
+global:
+  scrape_interval: 15s      # Default: scrape every 15 seconds
+  evaluation_interval: 15s  # Default: evaluate rules every 15 seconds
+  external_labels:
+    monitor: 'sibyl-mcp'    # Label for this monitoring instance
+    environment: 'production'
+
+# Alerting configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#             - alertmanager:9093
+
+# Scrape configurations
+scrape_configs:
+  # =========================================================================
+  # Prometheus self-monitoring
+  # =========================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # =========================================================================
+  # Sibyl MCP metrics
+  # =========================================================================
+  - job_name: 'sibyl-mcp'
+    # Metrics path defaults to '/metrics'
+    metrics_path: '/metrics'
+    # Scheme defaults to 'http'
+    scheme: 'http'
+
+    # Service discovery: use docker-compose service name
+    static_configs:
+      - targets: ['sibyl-mcp:9090']
+        labels:
+          instance: 'sibyl-mcp-primary'
+          service: 'mcp-server'
+
+    # Scrape parameters
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+    # Relabeling: customize metric handling
+    metric_relabel_configs:
+      # Drop internal metrics (optional)
+      # - source_labels: [__name__]
+      #   regex: 'go_.*|process_.*'
+      #   action: drop
+
+      # Add custom labels
+      - source_labels: [__name__]
+        target_label: sibyl_component
+        replacement: 'mcp_server'
+
+  # =========================================================================
+  # Optional: External MCP providers (if exposed)
+  # =========================================================================
+  # Uncomment to monitor external MCP services
+  #
+  # - job_name: 'external-mcp'
+  #   static_configs:
+  #     - targets: ['localhost:9091']
+  #       labels:
+  #         instance: 'browser-mcp'
+  #         service: 'external-mcp'
+  #
+  # - job_name: 'filesystem-mcp'
+  #   static_configs:
+  #     - targets: ['localhost:9092']
+  #       labels:
+  #         instance: 'filesystem-mcp'
+  #         service: 'external-mcp'
+
+  # =========================================================================
+  # Optional: System metrics (requires node-exporter)
+  # =========================================================================
+  # Uncomment to monitor host system metrics
+  #
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         instance: 'sibyl-host'
+
+  # =========================================================================
+  # Optional: Container metrics (requires cadvisor)
+  # =========================================================================
+  # Uncomment to monitor container resource usage
+  #
+  # - job_name: 'cadvisor'
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']
+  #       labels:
+  #         instance: 'sibyl-containers'
+
+# ============================================================================
+# Recording Rules (optional - useful for aggregating metrics)
+# ============================================================================
+# rule_files:
+#   - 'rules/*.yml'
+
+# Example rule definitions (if using rule files):
+# ---
+# groups:
+#   - name: sibyl_metrics
+#     interval: 30s
+#     rules:
+#       # Calculate average pipeline duration (5-minute window)
+#       - record: sibyl:pipeline:duration_seconds:avg5m
+#         expr: avg(rate(sibyl_pipeline_duration_seconds_sum[5m]))
+#
+#       # Calculate pipeline success rate
+#       - record: sibyl:pipeline:success_rate:5m
+#         expr: |
+#           (sibyl_pipeline_requests_total - on(pipeline) sibyl_pipeline_errors_total)
+#           / sibyl_pipeline_requests_total
+#
+#       # Track token usage per minute
+#       - record: sibyl:token_usage:per_minute
+#         expr: rate(sibyl_token_usage_total[1m])

@@ -1,0 +1,163 @@
+# OpenAI Gateway Tools Mapping Configuration
+# Maps OpenAI-style tool definitions to Sibyl pipelines
+#
+# This configuration enables integration with OpenAI-compatible frontends
+# (ChatGPT, OpenAI SDK, etc.) by exposing Sibyl pipelines as OpenAI tools.
+#
+# Each tool definition includes:
+# - workspace: Path to the workspace configuration
+# - pipeline: Name of the pipeline to execute
+# - description: Human-readable description for the tool
+# - params_schema: JSON Schema for tool parameters
+
+tools:
+  # ============================================================================
+  # Northwind Analytics Tools
+  # ============================================================================
+
+  northwind_revenue_analysis:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "revenue_analysis"
+    description: "Analyze revenue trends and identify contributing factors for Northwind Analytics"
+    params_schema:
+      question:
+        type: string
+        description: "Business question about revenue (e.g., 'Why is revenue down in Q3?')"
+        required: true
+      time_period:
+        type: string
+        description: "Time period to analyze (format: YYYY-QN or YYYY-MM, e.g., '2024-Q3')"
+        required: false
+        default: "2024-Q3"
+      region:
+        type: string
+        description: "Optional region filter (North America, EMEA, APAC, LATAM)"
+        required: false
+        enum: ["North America", "EMEA", "APAC", "LATAM"]
+
+  northwind_dashboard_explainer:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "explain_dashboard"
+    description: "Explain dashboard features and metrics in beginner-friendly language"
+    params_schema:
+      dashboard_name:
+        type: string
+        description: "Name of dashboard to explain (e.g., 'Revenue Overview', 'Customer Health')"
+        required: true
+      audience:
+        type: string
+        description: "Target audience for explanation (e.g., 'new product manager')"
+        required: false
+        default: "new product manager"
+      focus_areas:
+        type: array
+        items:
+          type: string
+        description: "Optional specific areas to focus on (e.g., ['metrics', 'filters', 'interactions'])"
+        required: false
+
+  northwind_release_notes:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "generate_release_notes"
+    description: "Generate release notes from feature documentation"
+    params_schema:
+      version:
+        type: string
+        description: "Release version (e.g., 'v2.1.0')"
+        required: true
+      release_date:
+        type: string
+        description: "Release date (YYYY-MM-DD)"
+        required: true
+      feature_keywords:
+        type: array
+        items:
+          type: string
+        description: "List of feature keywords to include (e.g., ['alerts', 'anomaly detection', 'mobile'])"
+        required: true
+
+  northwind_customer_health:
+    workspace: "examples/companies/northwind_analytics/config/workspace.yaml"
+    pipeline: "customer_health_summary"
+    description: "Analyze customer health scores and identify at-risk accounts"
+    params_schema:
+      segment:
+        type: string
+        description: "Customer segment filter (Enterprise, Professional, Starter)"
+        required: false
+        enum: ["Enterprise", "Professional", "Starter"]
+      health_threshold:
+        type: integer
+        description: "Health score threshold for 'at risk' (0-100)"
+        required: false
+        default: 50
+        minimum: 0
+        maximum: 100
+
+  # ============================================================================
+  # Vertex Foundry Tools (ML Platform)
+  # ============================================================================
+
+  vertex_hyperparameter_sweep:
+    workspace: "examples/companies/vertex_foundry/config/workspace.yaml"
+    pipeline: "hyperparameter_sweep"
+    description: "Plan and execute distributed hyperparameter search for ML experiments"
+    params_schema:
+      budget_usd:
+        type: number
+        description: "Total budget in USD for the hyperparameter sweep"
+        required: true
+        minimum: 0
+      param_space:
+        type: object
+        description: "Hyperparameter search space configuration"
+        required: true
+        properties:
+          learning_rate:
+            type: array
+            items:
+              type: number
+          batch_size:
+            type: array
+            items:
+              type: integer
+          dropout:
+            type: array
+            items:
+              type: number
+      target_metric:
+        type: string
+        description: "Metric to optimize (e.g., 'val_acc', 'val_loss')"
+        required: false
+        default: "val_acc"
+
+# ============================================================================
+# Global Configuration
+# ============================================================================
+
+config:
+  # Timeout for tool executions (seconds)
+  default_timeout: 300
+
+  # Enable async execution (return job handle for long-running tools)
+  enable_async_tools: false
+
+  # Include execution metadata in responses
+  include_metadata: true
+
+  # Error handling
+  error_handling:
+    include_stack_trace: false
+    return_partial_results: true
+
+  # Logging
+  logging:
+    level: INFO
+    log_tool_calls: true
+    log_parameters: true
+
+# Metadata
+metadata:
+  version: "1.0.0"
+  created_at: "2024-11-22"
+  description: "OpenAI Gateway tool mappings for Sibyl pipelines"

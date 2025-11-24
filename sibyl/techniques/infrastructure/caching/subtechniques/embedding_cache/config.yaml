@@ -1,0 +1,4 @@
+subtechnique: embedding_cache
+description: "Embedding caching"
+default_implementation: lru
+enabled: true

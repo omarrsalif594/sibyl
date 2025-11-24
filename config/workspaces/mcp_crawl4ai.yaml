@@ -1,0 +1,199 @@
+# Crawl4AI MCP Integration Workspace
+# Advanced RAG optimization with contextual chunking, hybrid search, and reranking
+#
+# This workspace demonstrates integration with the Crawl4AI RAG MCP Server
+# for enhanced retrieval quality through intelligent chunking and multi-phase search.
+#
+# MCP Server: https://github.com/coleam00/mcp-crawl4ai-rag
+# Categories: chunking, retrieval_quality
+# Expected Benefits:
+#   - 20-30% improvement in retrieval precision via contextual embeddings
+#   - Reduced hallucinations through two-phase document discovery + chunk search
+#   - Optimized chunking parameters based on corpus analysis
+
+name: "crawl4ai-rag-optimization"
+description: "RAG optimization with Crawl4AI MCP for advanced chunking and retrieval"
+version: "1.0"
+
+# Provider Configurations
+providers:
+  # LLM provider for generation tasks
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+  # Embeddings provider for semantic search
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store for document indexing
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/crawl4ai_vectors.duckdb"
+      collection_name: "crawl4ai_documents"
+      distance_metric: "cosine"
+
+  # Crawl4AI MCP Server
+  mcp:
+    crawl4ai:
+      transport: http
+      url: "http://localhost:6000"
+      tools:
+        - crawl_url
+        - search_crawled_pages
+        - rerank_results
+        - enable_contextual_embeddings
+        - enable_hybrid_search
+      timeout_s: 120
+
+# Shop Configurations
+shops:
+  rag:
+    techniques:
+      # Use semantic chunking for document processing
+      chunker: "rag_pipeline.chunking:semantic"
+
+      # Use semantic search for retrieval
+      retriever: "rag_pipeline.retrieval:semantic_search"
+
+      # Use embeddings for document vectorization
+      embedder: "rag_pipeline.embedding:default"
+
+      # Use indexing for vector store operations
+      indexer: "rag_pipeline.indexing:default"
+
+    config:
+      # Default chunking parameters
+      chunk_size: 1000
+      chunk_overlap: 200
+
+      # Retrieval parameters
+      top_k: 10
+      similarity_threshold: 0.7
+
+# Pipeline Configurations
+pipelines:
+  # Pipeline 1: Crawl URL, process with contextual chunking, and index
+  crawl_and_index:
+    shop: rag
+    entrypoint: "crawl.run"
+    description: "Crawl URL with Crawl4AI, apply contextual chunking, and index documents"
+    timeout_s: 180
+    steps:
+      # Step 1: Crawl URL using Crawl4AI MCP
+      - shop: mcp
+        provider: crawl4ai
+        tool: crawl_url
+        params:
+          url: "{{ input.url }}"
+          enable_contextual_embeddings: true
+          chunk_size: 1000
+          chunk_overlap: 200
+        timeout_s: 60
+
+      # Step 2: Extract and prepare documents from crawl results
+      # Note: This assumes crawl_url returns structured document data
+      # In practice, you may need glue code to transform MCP output
+
+      # Step 3: Generate embeddings for chunks
+      - use: rag.embedder
+        config:
+          model: "text-embedding-3-small"
+          batch_size: 32
+
+      # Step 4: Index documents in vector store
+      - use: rag.indexer
+        config:
+          collection_name: "crawl4ai_documents"
+          upsert_mode: true
+
+  # Pipeline 2: Search with two-phase retrieval and reranking
+  search_with_rerank:
+    shop: rag
+    entrypoint: "search.run"
+    description: "Two-phase search with hybrid retrieval and cross-encoder reranking"
+    timeout_s: 90
+    steps:
+      # Step 1: Enable hybrid search mode in Crawl4AI
+      - shop: mcp
+        provider: crawl4ai
+        tool: enable_hybrid_search
+        params:
+          enabled: true
+        timeout_s: 5
+
+      # Step 2: Search crawled pages (catalog search - document discovery)
+      - shop: mcp
+        provider: crawl4ai
+        tool: search_crawled_pages
+        params:
+          query: "{{ input.query }}"
+          limit: 20
+          search_mode: "hybrid"
+        timeout_s: 30
+
+      # Step 3: Rerank results using cross-encoder
+      - shop: mcp
+        provider: crawl4ai
+        tool: rerank_results
+        params:
+          query: "{{ input.query }}"
+          results: "{{ context.search_results }}"
+          top_k: 5
+          model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+        timeout_s: 30
+
+      # Step 4: Generate answer from top reranked results (optional)
+      # This would use the LLM to synthesize an answer
+      # Commented out as it may not be needed for pure search use case
+      # - use: ai_generation.generator
+      #   config:
+      #     prompt: "Answer the question based on the context: {{ input.query }}"
+      #     context: "{{ context.reranked_results }}"
+
+  # Pipeline 3: End-to-end RAG with optimized retrieval
+  optimized_rag:
+    shop: rag
+    entrypoint: "rag.run"
+    description: "Complete RAG pipeline with Crawl4AI-optimized retrieval"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 1.0
+      max_tokens: 50000
+    steps:
+      # Step 1: Retrieve relevant documents using hybrid search
+      - use: rag.retriever
+        config:
+          query: "{{ input.query }}"
+          top_k: 20
+          search_type: "semantic"
+
+      # Step 2: Rerank with Crawl4AI cross-encoder
+      - shop: mcp
+        provider: crawl4ai
+        tool: rerank_results
+        params:
+          query: "{{ input.query }}"
+          results: "{{ context.retrieval_results }}"
+          top_k: 5
+        timeout_s: 30
+
+      # Step 3: Generate answer using LLM
+      # Note: This would need to be implemented with actual LLM generation
+      # The technique would format the prompt with retrieved context
+      # and call the LLM provider
+
+# Budget Configuration
+budget:
+  max_cost_usd: 10.0
+  max_tokens: 100000
+  max_requests: 500

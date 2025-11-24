@@ -1,0 +1,125 @@
+# Hero Pipeline 3: Solver with Error Handling and Fallback (C1.3)
+# Demonstrates try/catch/finally for robust constraint solving
+
+name: solver-with-fallback-pipeline
+description: "Constraint solver with fallback strategies using try/catch/finally"
+version: "1.0"
+
+providers:
+  mcp:
+    constraint_solver:
+      transport: http
+      url: "http://localhost:8003"
+      tools: ["solve", "relax_constraints", "find_approximate"]
+      timeout_s: 60
+
+    telemetry:
+      transport: http
+      url: "http://localhost:9000"
+      tools: ["log_metrics", "send_alert"]
+      timeout_s: 10
+
+shops:
+  workflow:
+    techniques:
+      prepare: "workflow.preprocessing:normalize"
+      validate: "workflow.validation:check_feasibility"
+
+pipelines:
+  robust_solver:
+    shop: workflow
+    entrypoint: "solver.run"
+    description: "Constraint solver with multiple fallback strategies"
+    timeout_s: 180
+    budget:
+      max_cost_usd: 5.0
+      max_tokens: 50000
+    steps:
+      # Prepare problem
+      - use: workflow.prepare
+        config:
+          normalize_constraints: true
+
+      # Validate feasibility
+      - use: workflow.validate
+
+      # Main solving with error handling
+      - try_block:
+          steps:
+            # Attempt 1: Exact solution
+            - shop: mcp
+              provider: constraint_solver
+              tool: solve
+              params:
+                problem: "{{ input.problem }}"
+                mode: "exact"
+                timeout_s: 30
+
+          catch:
+            # Fallback 1: UNSAT error -> Relax constraints
+            - when: "{{ error.type == 'UNSATError' or 'infeasible' in error.message }}"
+              steps:
+                - shop: mcp
+                  provider: constraint_solver
+                  tool: relax_constraints
+                  params:
+                    problem: "{{ input.problem }}"
+                    relaxation_level: 0.1
+
+                - shop: mcp
+                  provider: constraint_solver
+                  tool: solve
+                  params:
+                    problem: "{{ context.relax_constraints_result }}"
+                    mode: "exact"
+
+            # Fallback 2: Timeout -> Approximate solution
+            - when: "{{ error.type == 'TimeoutError' }}"
+              steps:
+                - shop: mcp
+                  provider: constraint_solver
+                  tool: find_approximate
+                  params:
+                    problem: "{{ input.problem }}"
+                    quality_threshold: 0.95
+
+            # Fallback 3: Generic error -> Alert and partial result
+            - when: "{{ true }}"  # Catch-all
+              steps:
+                - shop: mcp
+                  provider: telemetry
+                  tool: send_alert
+                  params:
+                    severity: "error"
+                    message: "Solver failed: {{ error.message }}"
+                    context: "{{ input.problem }}"
+
+          finally:
+            # Always log metrics
+            - shop: mcp
+              provider: telemetry
+              tool: log_metrics
+              params:
+                pipeline: "robust_solver"
+                duration_ms: "{{ context.execution_time }}"
+                success: "{{ context.solver_result is defined }}"
+
+mcp:
+  tools:
+    - name: "robust_solver"
+      description: "Constraint solver with automatic fallback strategies"
+      pipeline: "robust_solver"
+      input_schema:
+        type: "object"
+        properties:
+          problem:
+            type: "object"
+            description: "Constraint problem definition"
+            properties:
+              variables:
+                type: "array"
+              constraints:
+                type: "array"
+              objective:
+                type: "object"
+        required: ["problem"]

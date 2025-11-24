@@ -1,0 +1,79 @@
+# Security Validation Technique Configuration
+# This technique provides configurable security validation for inputs and secrets
+
+technique:
+  id: security_validation
+  name: Security Validation
+  description: Configurable security validation for input sanitization and secret detection
+  version: 1.0.0
+  enabled: true
+  category: security
+
+# Configuration parameters (loaded from core config)
+parameters:
+  # Secret detection parameters
+  min_entropy:
+    description: Minimum entropy for secret detection
+    type: float
+    default: 3.0
+    source: security.secrets.min_entropy
+
+  min_length:
+    description: Minimum length for secret candidates
+    type: integer
+    default: 16
+    source: security.secrets.min_length
+
+  enabled_detectors:
+    description: Active secret detectors
+    type: list
+    default: ["aws", "github", "generic_api_key"]
+    source: security.secrets.enabled_detectors
+
+  # Input validation parameters
+  max_input_length:
+    description: Maximum input size in KB
+    type: integer
+    default: 1024
+    source: security.input_validation.max_size_kb
+
+  max_retry_attempts:
+    description: Max retries for shape violations
+    type: integer
+    default: 3
+    source: security.shape_validation.max_retry_attempts
+
+# Subtechniques
+subtechniques:
+  - id: input_validation
+    name: Input Validation
+    description: Validate and sanitize user inputs
+    enabled: true
+    default: true
+
+  - id: secret_detection
+    name: Secret Detection
+    description: Detect secrets in text and outputs
+    enabled: true
+    default: false
+
+  - id: shape_validation
+    name: Shape Validation
+    description: Validate output shape conformance
+    enabled: true
+    default: false
+
+# Validation rules
+validation:
+  min_entropy:
+    min: 0.0
+    max: 10.0
+  min_length:
+    min: 1
+    max: 1000
+  max_input_length:
+    min: 1
+    max: 102400  # 100 MB in KB
+  max_retry_attempts:
+    min: 1
+    max: 10

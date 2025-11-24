@@ -1,0 +1,4 @@
+subtechnique: sql_chunking
+description: "SQL-aware chunking"
+default_implementation: chunker_simple_sql
+enabled: true

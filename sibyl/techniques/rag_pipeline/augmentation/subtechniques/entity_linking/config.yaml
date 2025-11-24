@@ -1,0 +1,4 @@
+subtechnique: entity_linking
+description: "Entity linking approaches"
+default_implementation: spacy
+enabled: true

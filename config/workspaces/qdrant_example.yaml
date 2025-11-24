@@ -1,0 +1,215 @@
+# Example workspace configuration using Qdrant vector search engine
+# This demonstrates cloud-native vector storage with high performance
+
+name: "qdrant-example"
+description: "Cloud-native RAG setup with Qdrant for high-performance vector search"
+version: "1.0"
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    local:
+      provider: "local"
+      model: "llama2-7b"
+      base_url: "http://localhost:11434"
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: "local_sentence_transformer"
+      model: "all-MiniLM-L6-v2"
+      dimension: 384
+
+    fast_embeddings:
+      provider: "local_sentence_transformer"
+      model: "paraphrase-MiniLM-L3-v2"
+      dimension: 384
+
+  # Vector store configurations - Qdrant
+  vector_store:
+    # Local Qdrant instance (development)
+    docs_qdrant:
+      kind: qdrant
+      dsn: "http://localhost:6333"
+      collection_name: doc_embeddings
+      distance_metric: cosine
+      # dimension: 384  # Matches all-MiniLM-L6-v2
+
+    # Cloud Qdrant instance (production)
+    # Uncomment and configure for cloud deployment
+    # docs_qdrant_cloud:
+    #   kind: qdrant
+    #   dsn: "https://xyz-example.qdrant.io"
+    #   collection_name: doc_embeddings
+    #   distance_metric: cosine
+    #   api_key_env: "QDRANT_API_KEY"  # Set QDRANT_API_KEY environment variable
+    #   # dimension: 384
+
+    # Multi-tenant setup example
+    tenant_a_qdrant:
+      kind: qdrant
+      dsn: "http://localhost:6333"
+      collection_name: tenant_a_docs
+      distance_metric: cosine
+
+    tenant_b_qdrant:
+      kind: qdrant
+      dsn: "http://localhost:6333"
+      collection_name: tenant_b_docs
+      distance_metric: cosine
+
+# Shop configurations (technique collections)
+shops:
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+      refiner: "ai_generation.refinement:iterative"
+    config:
+      max_iterations: 3
+      quality_threshold: 0.8
+
+  workflow:
+    techniques:
+      orchestrator: "workflow.orchestration:sequential"
+      parallel_executor: "workflow.orchestration:parallel"
+    config:
+      max_concurrent: 5
+
+# Pipeline configurations (workflows)
+pipelines:
+  fast_search:
+    shop: "rag"
+    entrypoint: "search.run"
+    description: "High-performance semantic search using Qdrant"
+    timeout_s: 30
+    steps:
+      - use: "rag.retriever"
+        config:
+          top_k: 20
+          vector_store: "docs_qdrant"
+      - use: "rag.ranker"
+        config:
+          rerank_top_k: 5
+
+  hybrid_rag:
+    shop: "ai_generation"
+    entrypoint: "hybrid.run"
+    description: "Hybrid RAG with metadata filtering using Qdrant"
+    timeout_s: 120
+    steps:
+      - use: "rag.retriever"
+        config:
+          top_k: 10
+          vector_store: "docs_qdrant"
+          enable_filters: true
+      - use: "ai_generation.generator"
+        config:
+          prompt_template: "hybrid_rag"
+      - use: "ai_generation.validator"
+
+  multi_tenant_search:
+    shop: "workflow"
+    entrypoint: "multi_search.run"
+    description: "Search across multiple tenant collections in parallel"
+    timeout_s: 60
+    steps:
+      - use: "workflow.parallel_executor"
+        config:
+          searches:
+            - vector_store: "tenant_a_qdrant"
+              top_k: 5
+            - vector_store: "tenant_b_qdrant"
+              top_k: 5
+      - use: "rag.ranker"
+        config:
+          rerank_top_k: 10
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-qdrant"
+  server_version: "1.0.0"
+  tools:
+    - name: "fast_semantic_search"
+      description: "High-performance semantic search using Qdrant vector engine"
+      pipeline: "fast_search"
+      input_schema:
+        type: "object"
+        properties:
+          query:
+            type: "string"
+            description: "The search query"
+          max_results:
+            type: "integer"
+            description: "Maximum number of results"
+            default: 20
+          filters:
+            type: "object"
+            description: "Optional metadata filters"
+        required:
+          - "query"
+
+    - name: "hybrid_rag_search"
+      description: "Hybrid RAG with vector search and metadata filtering"
+      pipeline: "hybrid_rag"
+      input_schema:
+        type: "object"
+        properties:
+          question:
+            type: "string"
+            description: "The question to answer"
+          filters:
+            type: "object"
+            description: "Metadata filters (e.g., {'source': 'docs', 'year': 2024})"
+        required:
+          - "question"
+
+    - name: "multi_tenant_search"
+      description: "Search across multiple tenant collections"
+      pipeline: "multi_tenant_search"
+      input_schema:
+        type: "object"
+        properties:
+          query:
+            type: "string"
+            description: "The search query"
+        required:
+          - "query"
+
+# Setup instructions (for documentation):
+#
+# Local Development:
+# 1. Start Qdrant with Docker:
+#    docker run -p 6333:6333 -p 6334:6334 \
+#      -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+#      qdrant/qdrant
+#
+# 2. Install Python dependencies:
+#    pip install qdrant-client
+#
+# 3. Collections will be created automatically on first use
+#
+# Cloud Deployment:
+# 1. Create a Qdrant Cloud cluster at https://cloud.qdrant.io
+# 2. Get your API key and cluster URL
+# 3. Set environment variable: export QDRANT_API_KEY="your-key"
+# 4. Update dsn to your cluster URL
+# 5. Uncomment the docs_qdrant_cloud configuration above

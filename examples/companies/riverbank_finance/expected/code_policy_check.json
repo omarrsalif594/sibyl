@@ -1,0 +1,167 @@
+{
+  "status": "completed",
+  "outputs": {
+    "compliance_report": {
+      "file_analyzed": "interest_calculator.py",
+      "policy_reference": "INT-002",
+      "violations": [
+        {
+          "file": "interest_calculator.py",
+          "function": "calculate_compound_interest",
+          "line": 61,
+          "violation_type": "INCORRECT_FORMULA",
+          "severity": "CRITICAL",
+          "description": "Compound interest calculation does not follow policy INT-002 formula: A = P(1 + r/n)^(nt). Current implementation uses linear calculation instead of exponential compound formula.",
+          "policy_requirement": "Policy INT-002 requires compound interest to use formula A = P(1 + r/n)^(nt) where P=principal, r=annual rate, n=compound frequency, t=time in years",
+          "current_implementation": "Uses simple interest multiplied by periods: interest_per_period * total_periods",
+          "remediation": "Replace linear calculation with proper compound interest formula using math.pow(1 + period_rate, total_periods)"
+        },
+        {
+          "file": "interest_calculator.py",
+          "function": "calculate_savings_account_interest",
+          "line": 97,
+          "violation_type": "INCORRECT_DAY_COUNT",
+          "severity": "HIGH",
+          "description": "Savings account interest calculation uses 365-day year convention but policy INT-003 specifies 360-day banker's year",
+          "policy_requirement": "Policy INT-003 requires use of 360-day year (banker's year) for savings account interest calculations",
+          "current_implementation": "Uses 365 days: daily_rate = annual_rate / 365",
+          "remediation": "Change day count to 360: daily_rate = annual_rate / 360"
+        }
+      ],
+      "summary": {
+        "total_violations": 2,
+        "critical": 1,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "recommendation": "These violations must be addressed immediately as they affect financial calculations and customer billing. Both bugs cause incorrect interest calculations that may violate regulatory requirements and customer agreements."
+    }
+  },
+  "metadata": {
+    "pipeline": "code_compliance_check",
+    "workspace": "riverbank_finance_compliance"
+  },
+  "step_results": {
+    "load_code": {
+      "status": "completed",
+      "output": {
+        "file_path": "examples/companies/riverbank_finance/data/code/interest_calculator.py",
+        "lines_of_code": 210,
+        "language": "python"
+      }
+    },
+    "build_ast": {
+      "status": "completed",
+      "output": {
+        "artifact_type": "ASTArtifact",
+        "root": {
+          "type": "Module",
+          "children": 5
+        },
+        "language": "python",
+        "source_file": "interest_calculator.py",
+        "functions": [
+          {
+            "name": "calculate_simple_interest",
+            "line_start": 16,
+            "line_end": 36,
+            "parameters": ["principal", "rate", "time_years"],
+            "return_type": "float"
+          },
+          {
+            "name": "calculate_compound_interest",
+            "line_start": 39,
+            "line_end": 72,
+            "parameters": ["principal", "annual_rate", "time_years", "compound_frequency"],
+            "return_type": "float"
+          },
+          {
+            "name": "calculate_savings_account_interest",
+            "line_start": 74,
+            "line_end": 103,
+            "parameters": ["balance", "days", "annual_rate"],
+            "return_type": "float"
+          },
+          {
+            "name": "calculate_loan_payment",
+            "line_start": 106,
+            "line_end": 148,
+            "parameters": ["principal", "annual_rate", "num_payments"],
+            "return_type": "Dict[str, float]"
+          },
+          {
+            "name": "apply_promotional_rate",
+            "line_start": 150,
+            "line_end": 183,
+            "parameters": ["base_rate", "customer_tier", "relationship_years"],
+            "return_type": "float"
+          }
+        ]
+      }
+    },
+    "find_calculations": {
+      "status": "completed",
+      "output": {
+        "patterns_found": [
+          {
+            "pattern": "function_name contains 'calculate'",
+            "matches": 4,
+            "functions": [
+              "calculate_simple_interest",
+              "calculate_compound_interest",
+              "calculate_savings_account_interest",
+              "calculate_loan_payment"
+            ]
+          },
+          {
+            "pattern": "function_name contains 'interest'",
+            "matches": 3,
+            "functions": [
+              "calculate_simple_interest",
+              "calculate_compound_interest",
+              "calculate_savings_account_interest"
+            ]
+          },
+          {
+            "pattern": "contains math.pow",
+            "matches": 3,
+            "locations": [
+              {"function": "calculate_savings_account_interest", "line": 100},
+              {"function": "calculate_loan_payment", "line": 134},
+              {"function": "calculate_loan_payment", "line": 136}
+            ]
+          }
+        ]
+      }
+    },
+    "retrieve_policies": {
+      "status": "completed",
+      "output": {
+        "query": "interest calculation formula compound simple INT-002",
+        "chunks_retrieved": 5,
+        "policy_chunks": [
+          {
+            "policy_id": "INT-002",
+            "title": "Compound Interest Requirements",
+            "content": "All compound interest calculations must use the standard formula: A = P(1 + r/n)^(nt) where A is final amount, P is principal, r is annual interest rate (decimal), n is number of times interest compounds per year, t is time in years. This ensures consistency across all products and compliance with Truth in Savings Act requirements.",
+            "similarity_score": 0.95
+          },
+          {
+            "policy_id": "INT-003",
+            "title": "Savings Account Interest Calculation",
+            "content": "Savings accounts use daily compounding. Interest must be calculated using 360-day banker's year convention: daily_rate = annual_rate / 360. Compound using formula A = P(1 + daily_rate)^days. This standardizes calculations across all savings products.",
+            "similarity_score": 0.87
+          }
+        ]
+      }
+    },
+    "generate_report": {
+      "status": "completed",
+      "output": {
+        "report_generated": true,
+        "llm_model": "gpt-4"
+      }
+    }
+  }
+}

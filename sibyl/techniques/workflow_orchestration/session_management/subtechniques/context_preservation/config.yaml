@@ -1,0 +1,4 @@
+subtechnique: context_preservation
+description: "Context preservation methods"
+default_implementation: sliding_window
+enabled: true

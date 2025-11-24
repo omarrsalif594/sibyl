@@ -1,0 +1,33 @@
+# Chunking Technique Configuration
+# This configuration is technique-level and applies to all chunking subtechniques
+
+# Default chunking parameters
+defaults:
+  # Overlap between chunks (in characters or percentage)
+  overlap: 50
+
+  # Minimum chunk size
+  min_chunk_size: 100
+
+  # Maximum chunk size
+  max_chunk_size: 2000
+
+  # Whether to preserve code structure
+  preserve_structure: true
+
+# Metadata to include in chunks
+metadata:
+  include_line_numbers: true
+  include_file_path: true
+  include_language: true
+
+# Performance settings
+performance:
+  # Enable parallel processing
+  parallel: false
+
+  # Number of workers for parallel processing
+  num_workers: 4
+
+  # Batch size for processing
+  batch_size: 100

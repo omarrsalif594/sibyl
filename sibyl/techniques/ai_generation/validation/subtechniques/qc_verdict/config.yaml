@@ -1,0 +1,4 @@
+subtechnique: qc_verdict
+description: "Quality control validation with GREEN/YELLOW/RED verdicts"
+default_variant: default
+enabled: true

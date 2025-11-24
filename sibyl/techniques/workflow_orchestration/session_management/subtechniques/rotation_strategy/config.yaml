@@ -1,0 +1,4 @@
+subtechnique: rotation_strategy
+description: "Session rotation strategies"
+default_implementation: token_based
+enabled: true

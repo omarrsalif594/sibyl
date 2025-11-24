@@ -1,0 +1,4 @@
+subtechnique: checkpoint_storage
+description: "Checkpoint storage backends"
+default_implementation: file_based
+enabled: true

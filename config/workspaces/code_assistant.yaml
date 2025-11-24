@@ -1,0 +1,440 @@
+# Code Assistant Workspace
+# Purpose: Code analysis, review, and generation
+# Optimized for source code processing with syntax-aware chunking and AST-based analysis
+# Requires: OPENAI_API_KEY or ANTHROPIC_API_KEY (depending on provider selection)
+
+name: "code-assistant"
+description: "Code-focused workspace for analysis, review, and generation with syntax-aware processing"
+version: "1.0"
+
+# Global budget limits
+budget:
+  max_cost_usd: 3.0
+  max_tokens: 50000
+  max_requests: 30
+
+# Provider configurations
+providers:
+  # Language Model providers - optimized for code understanding
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.3  # Lower temperature for code tasks
+
+    fast:
+      provider: "openai"
+      model: "gpt-3.5-turbo"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 2048
+      temperature: 0.2
+
+    anthropic:
+      provider: "anthropic"
+      model: "claude-3-5-sonnet-20241022"
+      api_key_env: "ANTHROPIC_API_KEY"
+      max_tokens: 4096
+      temperature: 0.3
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store for code snippets and documentation
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/code_assistant.duckdb"
+      collection_name: "code_snippets"
+      distance_metric: "cosine"
+
+  # External MCP providers for code tools
+  mcp:
+    filesystem:
+      type: "stdio_mcp"
+      endpoint: "mcp-server-filesystem"
+      tools:
+        - "read_file"
+        - "write_file"
+        - "list_directory"
+        - "search_files"
+      timeout_s: 30
+
+    git:
+      type: "http_mcp"
+      endpoint: "http://localhost:9010"
+      tools:
+        - "git.get_repo_structure"
+        - "git.read_file_from_repo"
+        - "git.search_code"
+        - "git.get_file_history"
+      timeout_s: 30
+
+# Shop configurations
+shops:
+  # RAG shop optimized for code
+  code_rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 1024
+      chunk_overlap: 256  # Higher overlap for code continuity
+      top_k: 15
+      rerank_top_k: 5
+
+  # AI Generation shop for code
+  code_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+      refiner: "ai_generation.refinement:iterative"
+    config:
+      max_iterations: 3
+      quality_threshold: 0.85
+
+  # Code analysis shop
+  code_analysis:
+    techniques:
+      analyzer: "code_analysis.analysis:static"
+      reviewer: "code_analysis.review:quality_check"
+      documenter: "code_analysis.documentation:generator"
+    config:
+      check_complexity: true
+      check_security: true
+      check_style: true
+
+# Pipeline configurations
+pipelines:
+  # Code analysis pipeline
+  analyze_code:
+    shop: "code_rag"
+    description: "Analyze source code for quality, patterns, and potential improvements"
+    timeout_s: 180
+    budget:
+      max_cost_usd: 1.0
+      max_tokens: 10000
+      max_requests: 10
+    steps:
+      - use: "code_rag.chunker"
+        config:
+          chunk_size: 1024
+          chunk_overlap: 256
+
+      - use: "code_rag.retriever"
+        config:
+          top_k: 15
+          min_score: 0.5
+
+      - use: "code_rag.ranker"
+        config:
+          rerank_top_k: 5
+          llm_provider: "fast"
+
+      - use: "code_rag.synthesizer"
+        config:
+          llm_provider: "default"
+          synthesis_mode: "code_analysis"
+
+  # Code review pipeline
+  review_pull_request:
+    shop: "code_generation"
+    description: "Review code changes for quality, security, and best practices"
+    timeout_s: 240
+    budget:
+      max_cost_usd: 1.5
+      max_tokens: 15000
+      max_requests: 15
+    steps:
+      - use: "code_generation.generator"
+        config:
+          llm_provider: "default"
+          prompt_template: "code_review"
+          focus_areas:
+            - correctness
+            - performance
+            - security
+            - maintainability
+
+      - use: "code_generation.validator"
+        config:
+          min_quality: 0.85
+          validation_criteria:
+            - accuracy
+            - completeness
+            - actionability
+
+      - use: "code_generation.refiner"
+        config:
+          llm_provider: "default"
+          max_iterations: 2
+
+  # Code generation pipeline
+  generate_code:
+    shop: "code_generation"
+    description: "Generate code from specifications with quality validation"
+    timeout_s: 180
+    budget:
+      max_cost_usd: 1.0
+      max_tokens: 12000
+      max_requests: 10
+    steps:
+      - use: "code_generation.generator"
+        config:
+          llm_provider: "default"
+          prompt_template: "code_generation"
+          include_tests: true
+          include_docs: true
+
+      - use: "code_generation.validator"
+        config:
+          min_quality: 0.80
+          check_syntax: true
+          check_best_practices: true
+
+      - use: "code_generation.refiner"
+        config:
+          llm_provider: "default"
+          max_iterations: 3
+
+  # Documentation generation pipeline
+  generate_documentation:
+    shop: "code_analysis"
+    description: "Generate comprehensive documentation from source code"
+    timeout_s: 120
+    budget:
+      max_cost_usd: 0.75
+      max_tokens: 8000
+      max_requests: 8
+    steps:
+      - use: "code_analysis.analyzer"
+        config:
+          analysis_type: "structure"
+          extract_docstrings: true
+          extract_signatures: true
+
+      - use: "code_analysis.documenter"
+        config:
+          llm_provider: "default"
+          doc_format: "markdown"
+          include_examples: true
+          include_type_hints: true
+
+  # Code search and reference pipeline
+  search_code_base:
+    shop: "code_rag"
+    description: "Search codebase for similar patterns and references"
+    timeout_s: 90
+    budget:
+      max_cost_usd: 0.5
+      max_tokens: 5000
+      max_requests: 10
+    steps:
+      - use: "code_rag.retriever"
+        config:
+          top_k: 20
+          min_score: 0.6
+
+      - use: "code_rag.ranker"
+        config:
+          rerank_top_k: 10
+          llm_provider: "fast"
+
+      - use: "code_rag.synthesizer"
+        config:
+          llm_provider: "fast"
+          synthesis_mode: "reference_summary"
+
+  # Architecture analysis pipeline
+  analyze_architecture:
+    shop: "code_analysis"
+    description: "Analyze codebase architecture, dependencies, and design patterns"
+    timeout_s: 300
+    budget:
+      max_cost_usd: 1.5
+      max_tokens: 20000
+      max_requests: 15
+    steps:
+      - use: "code_analysis.analyzer"
+        config:
+          analysis_type: "architecture"
+          extract_dependencies: true
+          detect_patterns: true
+          check_layers: true
+
+      - use: "code_analysis.reviewer"
+        config:
+          llm_provider: "default"
+          review_type: "architecture"
+          suggest_improvements: true
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-code-assistant"
+  server_version: "1.0.0"
+  tools:
+    - name: "analyze_code"
+      description: "Analyze source code for quality, patterns, complexity, and improvements. Provides insights on code structure and potential issues."
+      pipeline: "analyze_code"
+      input_schema:
+        type: "object"
+        properties:
+          code:
+            type: "string"
+            description: "The source code to analyze"
+          language:
+            type: "string"
+            description: "Programming language (python, javascript, go, rust, java, etc.)"
+          focus:
+            type: "array"
+            description: "Analysis focus areas (complexity, performance, security, style)"
+            items:
+              type: "string"
+              enum:
+                - complexity
+                - performance
+                - security
+                - style
+                - maintainability
+        required:
+          - "code"
+          - "language"
+
+    - name: "review_code"
+      description: "Review code changes for quality, security, and best practices. Provides actionable feedback and suggestions."
+      pipeline: "review_pull_request"
+      input_schema:
+        type: "object"
+        properties:
+          code_diff:
+            type: "string"
+            description: "The code changes to review (diff format or raw code)"
+          context:
+            type: "string"
+            description: "Context or description of changes"
+          language:
+            type: "string"
+            description: "Programming language"
+          severity:
+            type: "string"
+            description: "Review severity level (strict, normal, lenient)"
+            enum:
+              - strict
+              - normal
+              - lenient
+            default: "normal"
+        required:
+          - "code_diff"
+          - "language"
+
+    - name: "generate_code"
+      description: "Generate code from specifications with syntax validation and quality checks. Includes tests and documentation."
+      pipeline: "generate_code"
+      input_schema:
+        type: "object"
+        properties:
+          specification:
+            type: "string"
+            description: "Detailed specification of code to generate"
+          language:
+            type: "string"
+            description: "Target programming language"
+          style:
+            type: "string"
+            description: "Code style or framework preference"
+          include_tests:
+            type: "boolean"
+            description: "Include unit tests (default: true)"
+            default: true
+          include_docs:
+            type: "boolean"
+            description: "Include documentation (default: true)"
+            default: true
+        required:
+          - "specification"
+          - "language"
+
+    - name: "document_code"
+      description: "Generate comprehensive documentation from source code. Creates markdown with examples and type information."
+      pipeline: "generate_documentation"
+      input_schema:
+        type: "object"
+        properties:
+          code:
+            type: "string"
+            description: "Source code to document"
+          language:
+            type: "string"
+            description: "Programming language"
+          doc_style:
+            type: "string"
+            description: "Documentation style"
+            enum:
+              - docstring
+              - markdown
+              - html
+            default: "markdown"
+          include_examples:
+            type: "boolean"
+            description: "Include usage examples (default: true)"
+            default: true
+        required:
+          - "code"
+          - "language"
+
+    - name: "search_codebase"
+      description: "Search codebase for similar code patterns and references. Returns relevant code snippets and context."
+      pipeline: "search_code_base"
+      input_schema:
+        type: "object"
+        properties:
+          query:
+            type: "string"
+            description: "Search query or code pattern"
+          language:
+            type: "string"
+            description: "Programming language to search in"
+          search_type:
+            type: "string"
+            description: "Type of search"
+            enum:
+              - pattern
+              - function
+              - class
+              - module
+              - import
+            default: "pattern"
+        required:
+          - "query"
+
+    - name: "analyze_architecture"
+      description: "Analyze codebase architecture, dependencies, and design patterns. Identifies architectural issues and improvement opportunities."
+      pipeline: "analyze_architecture"
+      input_schema:
+        type: "object"
+        properties:
+          root_path:
+            type: "string"
+            description: "Root path of codebase to analyze"
+          language:
+            type: "string"
+            description: "Primary programming language"
+          depth:
+            type: "string"
+            description: "Analysis depth"
+            enum:
+              - quick
+              - standard
+              - comprehensive
+            default: "standard"
+        required:
+          - "root_path"
+          - "language"

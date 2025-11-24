@@ -1,0 +1,404 @@
+# ====================================================================================
+# SIBYL CORE CONFIGURATION - Complete Reference
+# ====================================================================================
+# This file contains all configuration parameters for Sibyl Core.
+# All values can be overridden via:
+#   1. Environment variables: SIBYL_<SECTION>_<KEY>=value
+#   2. Custom config file: export SIBYL_CORE_CONFIG=/path/to/config.yaml
+#
+# For detailed documentation, see: CONFIG_REFERENCE.md
+# ====================================================================================
+
+# ====================================================================================
+# CONSENSUS & VOTING CONFIGURATION
+# Controls agent voting behavior, quorum thresholds, and consensus mechanisms
+# ====================================================================================
+consensus:
+  # Voting thresholds
+  initial_n: 3                    # Initial number of voting agents
+  max_n: 5                        # Maximum agents for consensus
+  k_threshold: 3                  # Votes needed for consensus
+  min_k_fallback: 2               # Minimum fallback votes
+
+  # Timeouts (seconds)
+  timeout_seconds: 10.0           # Overall vote timeout
+  per_agent_timeout: 5.0          # Per-agent timeout
+
+  # Confidence thresholds (0.0-1.0)
+  min_avg_confidence: 0.6         # Minimum average confidence
+  split_vote_threshold: 0.4       # Threshold for split vote detection (from vote_aggregator.py:172)
+  red_flag_escalation_threshold: 0.3  # Red flag escalation trigger
+
+  # Cost controls (USD cents)
+  cost_ceiling_cents: 2.0         # Per-operation cost ceiling
+  enable_early_commit: true       # Cancel agents on early consensus
+
+  # Pipeline-specific cost ceilings (USD cents)
+  pipeline_costs:
+    diagnosis: 0.5
+    strategy: 0.4
+    location: 0.8
+    generation: 1.5
+    validation: 0.3
+
+  # Vote ranking (from vote_aggregator.py:124)
+  vote_ranking:
+    method: "count_confidence_order"
+
+  # Maximum cost per pipeline (USD cents)
+  max_cost_per_pipeline_cents: 5.0
+
+# ====================================================================================
+# BUDGET ALLOCATION CONFIGURATION
+# Controls how budget is distributed across workflow phases
+# ====================================================================================
+budget:
+  # Model selection cascade (from orchestration/budget.py:189-209)
+  model_selection:
+    strategy: "downgrade_cascade"
+    allow_downgrade: true
+
+  # Initial model tier (1 = second-best model)
+  model_tier_initial: 1
+
+  # Phase allocation percentages (must sum to 1.0)
+  phase_allocation:
+    planning: 0.15
+    execution: 0.70
+    validation: 0.15
+
+# ====================================================================================
+# SESSION MANAGEMENT CONFIGURATION
+# Controls session lifecycle, rotation, and state management
+# ====================================================================================
+session:
+  # Rotation management (from session/rotation_manager.py)
+  rotation:
+    operation_poll_ms: 100          # Poll interval for rotation operations
+    status_log_interval_seconds: 5  # Status logging interval
+    early_rotation_threshold: 0.60  # Budget threshold for early rotation (60%)
+    force_rotation_threshold: 0.70  # Budget threshold for forced rotation (70%)
+
+  # Circuit breaker (from session/circuit_breaker.py:105-107)
+  circuit_breaker:
+    failure_threshold: 3            # Consecutive failures before opening
+    recovery_timeout_seconds: 30    # Time before attempting recovery
+    half_open_max_calls: 1          # Max calls in half-open state
+
+  # Summarization (from session/background_summarization.py:24)
+  summarization:
+    trigger_message_count: 20       # Messages before triggering summarization
+    cache_max_entries: 100          # Max cached summaries
+
+  # Orphan repair (from session/handoff_orchestrator.py:189)
+  orphan_repair:
+    retry_limit: 3                  # Max retries for orphan repair
+
+  # State writer (from session/state_writer.py:208-209,233-234)
+  state_writer:
+    wal_quota_mb: 500               # WAL file size quota (MB)
+    blob_quota_mb: 1000             # Blob storage quota (MB)
+    checkpoint_threshold_mb: 100    # Checkpoint trigger threshold
+    vacuum_threshold_mb: 200        # Vacuum trigger threshold
+
+# ====================================================================================
+# SECURITY & VALIDATION CONFIGURATION
+# Controls security policies, rate limiting, and input validation
+# ====================================================================================
+security:
+  # Rate limiter (from security/rate_limiter.py:40-41)
+  rate_limiter:
+    default_rpm: 100                # Default requests per minute
+    window_seconds: 60              # Rate limit window duration
+    cleanup_interval_seconds: 300   # Cleanup interval for rate limit state
+    exempt_ips:
+      - "localhost"
+      - "127.0.0.1"
+      - "::1"
+
+  # Secret detection (from security/secrets.py:16-18)
+  secrets:
+    min_entropy: 3.0                # Minimum entropy for secret detection
+    min_length: 16                  # Minimum length for secret candidates
+    enabled_detectors:              # Active secret detectors
+      - "aws"
+      - "github"
+      - "generic_api_key"
+
+  # Input validation (from security/validators/input.py:24)
+  input_validation:
+    max_size_kb: 1024               # Maximum input size (KB)
+
+  # Shape validation (from security/validators/shape_gate.py:50)
+  shape_validation:
+    max_retry_attempts: 3           # Max retries for shape violations
+    max_serialized_bytes: 4000      # Max serialized JSON output size (~1000 tokens)
+
+# ====================================================================================
+# LEARNING & PATTERN DISCOVERY CONFIGURATION
+# Controls pattern recognition, error learning, and knowledge retention
+# ====================================================================================
+learning:
+  # Pattern discovery (from learning/engine.py:75-76)
+  pattern_discovery:
+    min_frequency: 3                # Minimum pattern frequency
+    min_success_rate: 0.6           # Minimum success rate (0.0-1.0)
+    strategy: "frequency_based"
+
+  # Pattern grouping (from learning/engine.py:108)
+  pattern_grouping:
+    method: "keyword_based"
+    keywords_count: 3               # Number of keywords for grouping
+
+  # Suggested fixes (from learning/engine.py)
+  suggested_fixes:
+    top_k: 5                        # Top K fixes to suggest
+
+  # Confidence calculation (from learning/engine.py:141)
+  confidence_calculation:
+    formula: "weighted"
+
+  # Category naming (from learning/engine.py:389,398)
+  category_naming:
+    max_length: 40                  # Max category name length
+    strategy: "keyword_truncated"
+
+  # Common error keywords (from learning/engine.py:356-364)
+  error_keywords:
+    - "error"
+    - "exception"
+    - "failed"
+    - "failure"
+    - "invalid"
+    - "missing"
+    - "not found"
+    - "timeout"
+    - "refused"
+
+  # Store configuration (from learning/json_store.py:21-22)
+  storage:
+    retention_days: 30              # Days to retain learned patterns
+    max_patterns: 1000              # Maximum stored patterns
+
+# ====================================================================================
+# INFRASTRUCTURE / LLM CONFIGURATION
+# Controls LLM client behavior, retries, rate limits, and token management
+# ====================================================================================
+llm:
+  # Retry configuration (from infrastructure/router.py)
+  retry:
+    max_retries: 3
+    base_delay: 1.0
+    max_delay: 60.0
+    jitter_percent: 20
+    backoff_strategy: "exponential_jitter"
+
+  # Rate limiting (from infrastructure/router.py, infrastructure/backpressure.py)
+  rate_limit:
+    default_concurrent: 10
+    default_rpm: 50
+    window_seconds: 60
+
+  # Circuit breaker (from infrastructure/router.py:160-162)
+  circuit_breaker:
+    failure_threshold: 5
+    cooldown_seconds: 30
+    strategy: "threshold_based"
+
+  # Token counter (from infrastructure/token_counter.py)
+  token_counter:
+    safety_margin: 1.10
+    chars_per_token: 4
+
+  # Feature flags (from infrastructure/feature_flags.py:13-17)
+  features:
+    enable_prompt_caching: false
+    enable_extended_thinking: false
+    enable_pdfs: false
+    enable_computer_use: false
+
+  # JSON repair (from infrastructure/json_repair.py:18)
+  json_repair:
+    max_attempts: 3                 # Maximum JSON repair attempts
+
+  # Lifecycle (from infrastructure/lifecycle.py:28-29)
+  lifecycle:
+    shutdown_timeout_seconds: 30.0  # Graceful shutdown timeout
+    force_shutdown_delay_seconds: 5.0  # Force shutdown after delay
+
+# ====================================================================================
+# AGENT CONFIGURATION
+# Controls agent behavior, planning, and execution parameters
+# ====================================================================================
+agent:
+  # Maximum tools per plan (from agents/planner.py)
+  max_tools_per_plan: 5
+
+  # Cost estimation factor in tokens per step (from agents/planner.py)
+  cost_estimation_factor: 1000
+
+  # Time estimation factor in seconds per step (from agents/planner.py)
+  time_estimation_factor: 5
+
+  # Performance threshold in seconds (from agents/planner.py)
+  performance_threshold_seconds: 30
+
+  # Confidence calculation parameters (from agents/planner.py:263-266)
+  confidence:
+    base_confidence: 0.5
+    tool_weight: 0.1
+    max_confidence: 0.9
+
+  # Quality scoring parameters (from agents/reviewer.py:193,199-203)
+  quality:
+    failure_penalty: -20
+    critical_penalty: -15
+    high_penalty: -10
+    medium_penalty: -5
+
+  # Relevance scoring thresholds (from agents/search.py:249-252)
+  relevance:
+    high_threshold: 0.8
+    medium_threshold: 0.5
+
+# ====================================================================================
+# TOOL EXECUTION CONFIGURATION
+# Controls tool execution timeouts and limits
+# ====================================================================================
+tools:
+  # Tool execution timeouts (from framework/tools/tool_executor.py:34-35)
+  execution:
+    default_timeout_seconds: 60.0   # Default tool execution timeout
+    slow_tool_threshold_seconds: 10.0  # Threshold for slow tool warnings
+
+# ====================================================================================
+# ORCHESTRATION CONFIGURATION
+# Controls workflow orchestration, wave execution, and context management
+# ====================================================================================
+orchestration:
+  # Maximum parallel waves (from orchestration/wave_orchestrator.py)
+  wave_max_parallel: 10
+
+  # Context merge strategy config (from orchestration/wave_orchestrator.py:96-97)
+  context_merge:
+    strategy: "dict_merge"
+
+  # Consensus aggregation (from orchestration/experts.py:201-202)
+  consensus_aggregation:
+    method: "average_confidence"
+
+  # Error reporting format (from orchestration/experts.py:156,162-168)
+  error_reporting:
+    format: "structured"
+    include_context: true
+
+# ====================================================================================
+# QUALITY CONTROL CONFIGURATION
+# Controls quality assurance, validation, and learned pattern priorities
+# ====================================================================================
+quality_control:
+  # Quorum settings (from quality_control/orchestrator.py)
+  quorum:
+    default_k: 3
+    max_spawns: 10
+    cost_usd: 5.0
+
+  # Learned pattern priority (from quality_control/validator_service.py)
+  learned_pattern_priority: 50
+
+# ====================================================================================
+# CHECKPOINTING CONFIGURATION
+# Controls checkpoint storage and retention
+# ====================================================================================
+checkpointing:
+  # Default checkpoint path (from checkpointing/json_store.py)
+  default_path: "/tmp/sibyl_checkpoints"
+  retention_days: 7
+
+  # Filename format (from checkpointing/json_store.py:81)
+  filename_format: "checkpoint_{sequence:04d}.json"
+  naming_strategy: "sequence_based"
+
+# ====================================================================================
+# GRAPH CONFIGURATION
+# Controls graph traversal and search behavior
+# ====================================================================================
+graph:
+  # Maximum hops for path traversal (from graph/service.py)
+  path_max_hops: 10
+
+  # Search configuration (from graph/service.py:87-89)
+  search:
+    max_results: 100                # Maximum search results
+    similarity_threshold: 0.7       # Minimum similarity for search matches
+
+# ====================================================================================
+# SEARCH CONFIGURATION
+# Controls vector search and indexing behavior
+# ====================================================================================
+search:
+  # Vector index (from search/vector_index.py:33-36)
+  vector_index:
+    default_top_k: 10               # Default number of results
+    max_top_k: 100                  # Maximum results allowed
+    similarity_metric: "cosine"     # Similarity metric (cosine, euclidean, dot_product)
+    batch_size: 1000                # Indexing batch size
+
+# ====================================================================================
+# OBSERVABILITY CONFIGURATION
+# Controls logging, metrics, and performance monitoring
+# ====================================================================================
+observability:
+  # Logging (from observability/logging.py:19)
+  logging:
+    default_level: "INFO"           # Default log level
+    structured_format: true         # Use structured logging
+
+  # Metrics (from observability/metrics.py:31-34)
+  metrics:
+    sampling_rate: 1.0              # Metrics sampling rate (0.0-1.0)
+    export_interval_seconds: 60     # Metrics export interval
+    enable_histograms: true         # Enable histogram metrics
+    histogram_buckets:              # Histogram bucket boundaries
+      - 0.001
+      - 0.01
+      - 0.1
+      - 1.0
+      - 10.0
+
+  # Execution tracing (from observability/execution.py:23-24)
+  execution:
+    enable_tracing: true            # Enable execution tracing
+    trace_sample_rate: 0.1          # Trace sampling rate (0.0-1.0)
+
+# ====================================================================================
+# PERFORMANCE / PLATFORM CONFIGURATION
+# Controls performance optimization and resource management
+# ====================================================================================
+performance:
+  # ANN (Approximate Nearest Neighbor) search configuration
+  ann:
+    # Threshold for using flat index
+    flat_threshold: 1000
+    # Threshold for using IVF index
+    ivf_threshold: 100000
+    # FAISS IVF parameters
+    faiss_nlist: 100
+    faiss_nprobe: 10
+    # HNSW parameters
+    faiss_ef_construction: 200
+    faiss_ef_search: 50
+    # Index selection strategy
+    selection_strategy: "size_based"
+
+# ====================================================================================
+# CONFIGURATION SYSTEM META-CONFIGURATION
+# Controls configuration loading and priority resolution
+# ====================================================================================
+config:
+  # Source priorities (from config/aggregator.py:54-57)
+  priorities:
+    cli_args: 100                   # CLI arguments (highest priority)
+    env_vars: 80                    # Environment variables
+    config_file: 50                 # Configuration file
+    defaults: 0                     # Default values (lowest priority)

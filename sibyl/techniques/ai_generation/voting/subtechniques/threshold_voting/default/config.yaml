@@ -1,0 +1,15 @@
+implementation: threshold_voting_default
+description: "Default k-voting implementation with threshold-based consensus"
+version: "1.0.0"
+
+# This implementation uses configuration from:
+# 1. Core config (sibyl/core/config/core_defaults.yaml)
+# 2. Technique config (techniques/voting/config.yaml)
+# 3. Subtechnique config (this file)
+
+# Subtechnique-specific overrides (optional)
+# These override both core and technique configs
+overrides:
+  # Uncomment to override specific parameters
+  # k_threshold: 4
+  # min_avg_confidence: 0.7

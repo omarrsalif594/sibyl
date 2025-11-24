@@ -1,0 +1,38 @@
+# Graphiti Knowledge Graph Configuration
+# Usage: Include this snippet in your workspace.yaml
+
+mcps:
+  graphiti:
+    enabled: true
+
+    # Neo4j connection (backend for Graphiti)
+    neo4j_uri: bolt://localhost:7687
+    neo4j_user: neo4j
+    neo4j_password: ${NEO4J_PASSWORD}
+
+    # Graph settings
+    graph_name: knowledge_graph
+    max_depth: 3  # Maximum traversal depth
+
+    # Entity extraction
+    entity_types:
+      - Person
+      - Organization
+      - Transaction
+      - Document
+
+    # Relationship types
+    relationship_types:
+      - WORKS_FOR
+      - OWNS
+      - RELATED_TO
+      - DEPENDS_ON
+
+# Example usage in pipeline:
+# techniques:
+#   - name: build_graph
+#     type: data_integration/graph_builder
+#     config:
+#       mcp_name: graphiti
+#       entities: ${entities}
+#       relationships: ${relationships}

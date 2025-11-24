@@ -1,0 +1,214 @@
+# Example workspace configuration for Sibyl
+# This demonstrates a local RAG and web research setup
+
+name: "local-rag-demo"
+description: "Local RAG and web research demo with multiple providers"
+version: "1.0"
+
+# Provider configurations
+providers:
+  # Language Model providers
+  llm:
+    default:
+      provider: "openai"
+      model: "gpt-4.1"
+      api_key_env: "OPENAI_API_KEY"
+      max_tokens: 4096
+      temperature: 0.7
+
+    local:
+      provider: "local"
+      model: "llama2-7b"
+      base_url: "http://localhost:11434"
+      max_tokens: 2048
+      temperature: 0.5
+
+  # Embeddings providers
+  embeddings:
+    default:
+      provider: "local_sentence_transformer"
+      model: "all-MiniLM-L6-v2"
+      dimension: 384
+
+    openai_embeddings:
+      provider: "openai"
+      model: "text-embedding-ada-002"
+      api_key_env: "OPENAI_API_KEY"
+      dimension: 1536
+
+  # Vector store configurations
+  vector_store:
+    default:
+      kind: "duckdb"
+      dsn: "duckdb://./data/vector_store.duckdb"
+      collection_name: "documents"
+      distance_metric: "cosine"
+
+    memory:
+      kind: "faiss"
+      dsn: "memory://"
+      distance_metric: "cosine"
+
+  # External MCP providers
+  mcp:
+    browser:
+      transport: "http"
+      url: "http://localhost:9002"
+      tools:
+        - "browser.search"
+        - "browser.navigate"
+        - "browser.extract"
+      timeout_s: 15
+
+    filesystem:
+      transport: "stdio"
+      command: ["mcp-server-filesystem"]
+      tools:
+        - "read_file"
+        - "write_file"
+        - "list_directory"
+      timeout_s: 30
+
+# Shop configurations (technique collections)
+shops:
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      ranker: "rag_pipeline.ranking:rerank"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      chunk_size: 512
+      chunk_overlap: 50
+
+  ai_generation:
+    techniques:
+      generator: "ai_generation.generation:basic"
+      validator: "ai_generation.validation:qc_verdict"
+      refiner: "ai_generation.refinement:iterative"
+    config:
+      max_iterations: 3
+      quality_threshold: 0.8
+
+  workflow:
+    techniques:
+      orchestrator: "workflow.orchestration:sequential"
+      parallel_executor: "workflow.orchestration:parallel"
+      conditional: "workflow.control:if_else"
+    config:
+      max_concurrent: 5
+
+  agents:
+    techniques:
+      planner: "agents.planning:hierarchical"
+      executor: "agents.execution:tool_use"
+      monitor: "agents.monitoring:progress_tracker"
+    config:
+      max_steps: 10
+      planning_strategy: "hierarchical"
+
+# Pipeline configurations (workflows)
+pipelines:
+  web_research_pipeline:
+    shop: "ai_generation"
+    entrypoint: "research.run"
+    description: "Research a topic using web search, RAG, and summarization"
+    timeout_s: 300
+    steps:
+      - use: "rag.chunker"
+        config:
+          chunk_size: 1024
+      - use: "rag.retriever"
+        config:
+          top_k: 10
+      - use: "rag.ranker"
+        config:
+          rerank_top_k: 5
+      - use: "ai_generation.generator"
+        config:
+          prompt_template: "research_summary"
+      - use: "ai_generation.validator"
+        config:
+          min_quality: 0.7
+
+  document_analysis:
+    shop: "rag"
+    entrypoint: "analyze.run"
+    description: "Analyze documents using semantic search and extraction"
+    timeout_s: 180
+    steps:
+      - use: "rag.chunker"
+      - use: "rag.retriever"
+      - use: "rag.synthesizer"
+
+  agent_workflow:
+    shop: "agents"
+    entrypoint: "agent.execute"
+    description: "Execute agent workflow with planning and tool use"
+    timeout_s: 600
+    steps:
+      - use: "agents.planner"
+        config:
+          max_depth: 3
+      - use: "agents.executor"
+        config:
+          allow_tool_failures: true
+      - use: "agents.monitor"
+
+# MCP tool exposure configuration
+mcp:
+  server_name: "sibyl-workspace"
+  server_version: "1.0.0"
+  tools:
+    - name: "web_research"
+      description: "Research a topic on the web using RAG and summarization. Provides comprehensive analysis with sources."
+      pipeline: "web_research_pipeline"
+      input_schema:
+        type: "object"
+        properties:
+          query:
+            type: "string"
+            description: "The research query or topic"
+          max_sources:
+            type: "integer"
+            description: "Maximum number of sources to use"
+            default: 10
+        required:
+          - "query"
+
+    - name: "analyze_document"
+      description: "Analyze a document using semantic search and extraction techniques"
+      pipeline: "document_analysis"
+      input_schema:
+        type: "object"
+        properties:
+          document_path:
+            type: "string"
+            description: "Path to the document to analyze"
+          analysis_type:
+            type: "string"
+            description: "Type of analysis to perform"
+            enum:
+              - "summary"
+              - "key_points"
+              - "sentiment"
+            default: "summary"
+        required:
+          - "document_path"
+
+    - name: "run_agent"
+      description: "Execute an agent workflow with planning and tool use capabilities"
+      pipeline: "agent_workflow"
+      input_schema:
+        type: "object"
+        properties:
+          task:
+            type: "string"
+            description: "The task for the agent to accomplish"
+          tools:
+            type: "array"
+            description: "List of tools available to the agent"
+            items:
+              type: "string"
+        required:
+          - "task"

@@ -1,0 +1,4 @@
+subtechnique: query_cache
+description: "Query caching"
+default_implementation: exact_match
+enabled: true

@@ -1,0 +1,8 @@
+{
+  "forecast_points": 3,
+  "frequency": "monthly",
+  "has_confidence_intervals": true,
+  "horizon": 3,
+  "model": "prophet",
+  "provider": "chronulus"
+}

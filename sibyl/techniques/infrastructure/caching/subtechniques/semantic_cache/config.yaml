@@ -1,0 +1,4 @@
+subtechnique: semantic_cache
+description: "Semantic similarity caching"
+default_implementation: similarity_threshold
+enabled: true

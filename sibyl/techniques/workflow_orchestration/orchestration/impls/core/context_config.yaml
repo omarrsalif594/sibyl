@@ -1,0 +1,84 @@
+# Context Management Configuration
+# Extracted from hardcoded logic in context.py
+
+# Agent context slicing configuration (from context.py:56-95)
+agent_context_slicing:
+  # Default context for agents (if not specified below)
+  default:
+    include_stable_inputs: true
+    include_dynamic_observations: true
+    include_summaries: true
+    specific_fields: []
+
+  # SQL error analyst agent
+  sql_error_analyst:
+    include_stable_inputs: true
+    include_dynamic_observations: false
+    include_summaries: false
+    specific_fields:
+      - errors
+      - sql
+
+  # Type validator agent
+  type_validator:
+    include_stable_inputs: true
+    include_dynamic_observations: false
+    include_summaries: false
+    specific_fields:
+      - schemas
+      - proposed_fix
+
+  # PR writer agent
+  pr_writer:
+    include_stable_inputs: true
+    include_dynamic_observations: false
+    include_summaries: true
+    specific_fields: []
+
+# Summarization configuration (from context.py:343-366)
+summarization:
+  # Prompt template configuration
+  prompt_template: |
+    Summarize this context to ~{compression_target} of original length while preserving critical information:
+
+    {content}
+
+    Focus on:
+    {focus_areas}
+
+    Output JSON matching this schema:
+    {schema}
+
+  # Compression target
+  compression_target: "50%"
+
+  # Content truncation limit (characters)
+  content_truncation_limit: 2000
+
+  # Focus areas for summarization
+  focus_areas:
+    - "Key points (important facts, decisions, results)"
+    - "Errors (any failures or issues)"
+    - "Decisions made (why certain paths were chosen)"
+    - "Metrics (quantitative data)"
+
+# Summary schema configuration (from context.py:188-197)
+summary_schema:
+  type: object
+  properties:
+    key_points:
+      type: array
+      items:
+        type: string
+    errors:
+      type: array
+      items:
+        type: string
+    decisions:
+      type: array
+      items:
+        type: string
+    metrics:
+      type: object
+  required:
+    - key_points

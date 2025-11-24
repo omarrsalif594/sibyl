@@ -1,0 +1,4 @@
+subtechnique: cost_optimization
+description: "Cost optimization techniques"
+default_implementation: token_budget
+enabled: true

@@ -1,0 +1,101 @@
+# =============================================================================
+# Trivy Configuration - Container Security Scanner
+# =============================================================================
+# Trivy scans containers for vulnerabilities, misconfigurations, and secrets.
+# https://aquasecurity.github.io/trivy/
+# =============================================================================
+
+# Scan targets
+scan:
+  # Security checks to run
+  security-checks:
+    - vuln       # Vulnerabilities
+    - config     # Misconfigurations
+    - secret     # Secrets
+    - license    # License compliance
+
+  # Skip files/directories
+  skip-files:
+    - "**/.git/**"
+    - "**/.venv/**"
+    - "**/venv/**"
+    - "**/__pycache__/**"
+    - "**/node_modules/**"
+    - "**/test/**"
+    - "**/tests/**"
+
+# Vulnerability scanning
+vulnerability:
+  # Severity levels to report
+  severity:
+    - CRITICAL
+    - HIGH
+    - MEDIUM
+    # - LOW      # Uncomment to include low severity
+    # - UNKNOWN  # Uncomment to include unknown severity
+
+  # Vulnerability types
+  type:
+    - os        # OS packages
+    - library   # Application dependencies
+
+  # Ignore unfixed vulnerabilities (can't be patched yet)
+  ignore-unfixed: false
+
+# Misconfiguration scanning
+misconfiguration:
+  # Severity levels
+  severity:
+    - CRITICAL
+    - HIGH
+    - MEDIUM
+
+  # Include checks for:
+  policy:
+    - dockerfile  # Dockerfile best practices
+    - kubernetes  # Kubernetes manifests
+    - terraform   # Terraform configs
+
+# Secret scanning
+secret:
+  # Severity for detected secrets
+  severity:
+    - CRITICAL
+    - HIGH
+
+  # Custom secret patterns (in addition to defaults)
+  config: .trivyignore
+
+# License scanning
+license:
+  # License types to flag
+  forbidden:
+    - GPL-2.0
+    - GPL-3.0
+    - AGPL-3.0
+
+  # Allowed licenses (permissive)
+  allowed:
+    - MIT
+    - Apache-2.0
+    - BSD-3-Clause
+    - BSD-2-Clause
+    - ISC
+    - Python-2.0
+
+# Output format
+format: table  # table | json | sarif | cyclonedx | spdx
+
+# Exit code
+exit-code: 1  # Non-zero exit on vulnerabilities found
+
+# Cache
+cache:
+  backend: fs
+  dir: ~/.cache/trivy
+
+# Timeout
+timeout: 15m
+
+# Ignore file
+ignorefile: .trivyignore

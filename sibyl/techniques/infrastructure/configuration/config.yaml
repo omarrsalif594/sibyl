@@ -1,0 +1,7 @@
+technique: configuration
+description: "Configuration management and merging strategies"
+version: "1.0.0"
+default_subtechnique: merge_strategy
+timeout: 300
+max_retries: 3
+enabled: true

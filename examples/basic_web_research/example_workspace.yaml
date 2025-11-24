@@ -1,0 +1,62 @@
+# Example Workspace for Basic Web Research
+# This is a simple workspace configuration for the example
+
+name: basic-web-research-example
+version: "1.0"
+description: "Simple workspace for basic web research example"
+
+# Provider configurations
+providers:
+  # Local LLM for testing (no API key needed)
+  llm:
+    default:
+      provider: local
+      model: echo  # Echo mode for testing
+      max_tokens: 2048
+      temperature: 0.7
+
+  # Local embeddings
+  embeddings:
+    default:
+      provider: local_sentence_transformer
+      model: all-MiniLM-L6-v2
+      dimension: 384
+
+  # Local vector store
+  vector_store:
+    default:
+      kind: duckdb
+      dsn: "duckdb://./data/example.db"
+      collection_name: documents
+      distance_metric: cosine
+
+  # No external MCP providers for simplicity
+  mcp: {}
+
+# Shop configurations
+shops:
+  # Simple RAG shop
+  rag:
+    techniques:
+      retriever: "rag_pipeline.retrieval:semantic_search"
+      synthesizer: "rag_pipeline.synthesis:summarize"
+    config:
+      top_k: 5
+
+# Pipeline configurations
+pipelines:
+  # Simple search pipeline
+  simple_search:
+    shop: rag
+    description: "Simple semantic search and synthesis"
+    timeout_s: 60
+    steps:
+      - use: rag.retriever
+        config:
+          top_k: 5
+      - use: rag.synthesizer
+
+# MCP configuration (not used in this example)
+mcp:
+  server_name: "basic-web-research-example"
+  tools: []

@@ -1,0 +1,49 @@
+name: data-connectors-example
+version: "1.0"
+description: "Example workspace demonstrating DC2 data connectors"
+
+providers:
+  # Document Sources - Filesystem Markdown
+  document_sources:
+    docs_local:
+      type: filesystem_markdown
+      config:
+        root: ./docs
+        pattern: "**/*.md"
+
+  # Vector Store - DuckDB
+  vector_store:
+    docs_index:
+      kind: duckdb
+      dsn: "duckdb://./data/vector_index.duckdb"
+      collection_name: doc_embeddings
+      distance_metric: cosine
+
+  # SQL Database - SQLite
+  sql:
+    experiments:
+      type: sqlite
+      config:
+        path: ./data/experiments.db
+
+  # LLM Provider (required for workspace)
+  llm:
+    default:
+      provider: local
+      model: echo
+
+  # Embeddings Provider
+  embeddings:
+    default:
+      provider: local_sentence_transformer
+      model: all-MiniLM-L6-v2
+      dimension: 384
+
+shops:
+  rag:
+    techniques:
+      chunker: "rag_pipeline.chunking:semantic"
+      retriever: "rag_pipeline.retrieval:semantic_search"
+    config:
+      chunk_size: 512
+      overlap: 50

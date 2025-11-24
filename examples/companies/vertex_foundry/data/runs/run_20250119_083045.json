@@ -1,0 +1,33 @@
+{
+  "run_id": "run_20250119_083045",
+  "experiment_id": "exp_005",
+  "status": "completed",
+  "started_at": "2025-01-19T08:30:45Z",
+  "completed_at": "2025-01-19T10:38:22Z",
+  "duration_seconds": 7657,
+  "hyperparameters": {
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "epochs": 50,
+    "dropout": 0.5,
+    "weight_decay": 0.001
+  },
+  "metrics": {
+    "final_train_loss": 0.312,
+    "final_train_acc": 89.2,
+    "best_val_loss": 0.534,
+    "best_val_acc": 81.3,
+    "best_epoch": 41
+  },
+  "resources": {
+    "gpu_type": "T4",
+    "gpu_count": 1,
+    "memory_gb": 16,
+    "cost_usd": 4.24
+  },
+  "artifacts": {
+    "model_checkpoint": "s3://vertex-foundry/runs/run_20250119_083045/best_model.pth",
+    "tensorboard_logs": "s3://vertex-foundry/runs/run_20250119_083045/logs/",
+    "config_file": "s3://vertex-foundry/runs/run_20250119_083045/hparams.json"
+  }
+}
