@@ -1,6 +1,6 @@
 # Sibyl
 
-![Sibyl architecture](docs/sibyl-logo.png)
+![Sibyl](https://github.com/vivien-jourde/sibyl/blob/main/docs/sibyl_logo.png)
 
 ## Status
 
